@@ -73,7 +73,7 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 .count.alert { background: var(--warn-bg); color: var(--warn); }
 
 main { padding-top: 22px; }
-.panel[hidden] { display: none !important; }
+[hidden], .panel[hidden] { display: none !important; }
 .stack { display: grid; gap: 28px; }
 .sec-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 6px 16px; margin-bottom: 12px; }
 .sec-head p { color: var(--ink-3); font-size: 13px; max-width: 62ch; }
@@ -197,6 +197,39 @@ td.mono, th.r, td.r { text-align: right; }
 .out { font-family: var(--font-data); font-size: 12.5px; background: var(--bg); border: 1px dashed var(--line); border-radius: 8px; padding: 10px; overflow-wrap: anywhere; }
 .cta-list { display: grid; gap: 6px; font-size: 13.5px; }
 .steps { margin: 0; padding-left: 20px; display: grid; gap: 6px; color: var(--ink-2); font-size: 14px; }
+/* board */
+.board { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(262px, 1fr); gap: 10px; overflow-x: auto; padding-bottom: 10px; align-items: start; scroll-snap-type: x proximity; }
+.col { background: var(--surface-2); border-radius: 10px; padding: 10px; min-width: 0; scroll-snap-align: start; }
+.col-h { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 8px; }
+.col-h h3 { font-size: 14px; }
+.col-body { display: grid; gap: 8px; min-height: 80px; align-content: start; border-radius: 8px; }
+.col-body.over { outline: 2px dashed var(--accent); outline-offset: 2px; }
+.empty { border: 1.5px dashed var(--line); border-radius: 8px; padding: 18px 10px; text-align: center; font-size: 12.5px; color: var(--ink-3); }
+.kcard { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 10px; display: grid; gap: 8px; cursor: grab; min-width: 0; }
+.kcard.dragging { opacity: 0.45; }
+.kt { font-weight: 700; font-family: var(--font-display); font-size: 14px; line-height: 1.25; overflow-wrap: anywhere; }
+.kcard details summary { cursor: pointer; font-size: 12px; color: var(--ink-3); }
+.kcard .note { font-size: 12.5px; color: var(--ink-2); margin-top: 4px; }
+.kctl { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.kctl input[type="date"] { flex: 1 1 120px; min-width: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 3px 6px; min-height: 28px; font-size: 12.5px; }
+.small-link { font-size: 12.5px; margin-left: auto; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 4px; }
+.month { display: grid; grid-template-columns: repeat(7, minmax(88px, 1fr)); gap: 3px; min-width: 640px; }
+.dow { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); padding: 2px 4px; }
+.day { background: var(--bg); border: 1px solid var(--line); border-radius: 6px; min-height: 76px; padding: 4px; display: grid; gap: 3px; align-content: start; min-width: 0; }
+.day.blank { background: transparent; border-color: transparent; }
+.day.today { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.dn { font-family: var(--font-data); font-size: 11px; color: var(--ink-3); }
+.cs { display: block; font-size: 11px; line-height: 1.25; padding: 2px 5px; border-radius: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.legend .cs { display: inline-block; font-size: 12px; padding: 2px 9px; border-radius: 99px; }
+.cs-planned { background: var(--surface-2); color: var(--ink-2); }
+.cs-scripted { background: var(--accent-soft); color: var(--accent); }
+.cs-filmed { background: var(--warn-bg); color: var(--warn); }
+.cs-ready { background: var(--warn-bg); color: var(--warn); box-shadow: inset 0 0 0 1px var(--warn); }
+.cs-scheduled { background: var(--good-bg); color: var(--good); }
+.cs-published { background: var(--surface-2); color: var(--ink-3); }
+#syncBox summary { cursor: pointer; }
+.kpi .num.small { font-size: 28px; }
 .toast { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 8px 14px; border-radius: 8px; font-size: 13px; opacity: 0; pointer-events: none; transition: opacity 0.15s; z-index: 50; max-width: 90vw; }
 .toast.on { opacity: 1; }
 </style>
@@ -243,19 +276,42 @@ td.mono, th.r, td.r { text-align: right; }
     <!-- PIPELINE -->
     <section class="panel stack" id="p-pipeline" role="tabpanel" hidden>
       <div>
-        <div class="sec-head"><div><h2>Production pipeline</h2><p>Scripts read from your Drive "To Film" folder. Change a stage or date and it saves for the next time you open this page.</p></div>
-          <div class="chips" id="pipeFilters"></div></div>
-        <div class="stages" id="stageStrip"></div>
+        <div class="sec-head"><div><h2>Production</h2><p>Drag a card between columns, or use the arrows. Scripts come from your Drive "To Film" folder. Changes save for the next time you open this page.</p></div>
+          <div class="row" style="display:flex;gap:10px;flex-wrap:wrap"><div class="chips" id="pipeViews"></div><div class="chips" id="pipeFilters"></div></div></div>
+        <details class="card" id="syncBox">
+          <summary><h3 style="display:inline">Sync with your Claude chat and Drive</h3> <span class="muted" style="font-size:12.5px">Two copy-paste buttons, no extra tools</span></summary>
+          <div class="grid g2" style="margin-top:14px">
+            <div>
+              <p style="color:var(--ink-2);font-size:14px">The board is the source of truth for status and dates. Your planning chat is for ideas, scripts and scheduling advice. When you start a planning session, paste the board in. When the chat changes the plan, paste its table back here.</p>
+              <div class="row" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn primary" id="copyBoard" type="button">Copy board for my chat</button><button class="btn" id="driveSync" type="button">Pull new scripts from Drive</button></div>
+              <p class="muted" style="font-size:12.5px;margin-top:8px" id="driveNote"></p>
+            </div>
+            <div>
+              <label class="eyebrow" for="importTxt">Paste the chat's table here</label>
+              <textarea id="importTxt" style="width:100%;min-height:96px;margin-top:4px;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px;font-family:var(--font-data);font-size:12px" placeholder="| Title | Format | Publish date | Stage | Script link |"></textarea>
+              <div class="row" style="display:flex;gap:8px;margin-top:8px"><button class="btn" id="importPrev" type="button">Preview import</button></div>
+              <div id="importOut"></div>
+            </div>
+          </div>
+        </details>
       </div>
-      <div class="card">
-        <div class="sec-head"><div><h2>Next 8 weeks</h2><p>Target: <b id="tgtTxt">1 long video</b> a week. Dates you set below land here.</p></div>
-          <div class="row"><button class="btn primary" id="planBtn" type="button">Suggest a schedule</button></div></div>
-        <div id="planOut"></div>
-        <div id="weeks"></div>
+      <div id="viewBoard">
+        <div class="board" id="board"></div>
+        <div id="pubWrap" style="margin-top:12px"></div>
       </div>
-      <div>
-        <div class="sec-head"><div><h2>Needs a date</h2><p>Scripts with no publish date yet. Seasonal ones are flagged.</p></div></div>
-        <div id="undated" class="list"></div>
+      <div id="viewCal" class="stack" hidden>
+        <div class="card">
+          <div class="sec-head"><div><h2>Calendar</h2><p>Target: <b>1 long video</b> a week. Colors show how far along each video is. Change a date on the board or in the list below.</p></div>
+            <div class="row"><button class="btn primary" id="planBtn" type="button">Suggest a schedule</button></div></div>
+          <div class="legend" id="calLegend"></div>
+          <div id="planOut"></div>
+          <div id="months"></div>
+          <p class="muted" style="font-size:13px;margin-top:12px" id="openWeeks"></p>
+        </div>
+        <div>
+          <div class="sec-head"><div><h2>Needs a date</h2><p>Scripts with no publish date yet. Seasonal ones are flagged.</p></div></div>
+          <div id="undated" class="list"></div>
+        </div>
       </div>
     </section>
 
@@ -273,6 +329,11 @@ td.mono, th.r, td.r { text-align: right; }
       <div>
         <div class="sec-head"><div><h2>Video to customer path</h2><p>Only the YouTube step is live. The other four need the connections on the Data sources tab, and stay empty here until then.</p></div></div>
         <div class="flow" id="flow"></div>
+      </div>
+      <div class="card" id="salesCard">
+        <div class="sec-head"><div><h2>Course sales</h2><p>Read from the "Sale notification" emails ThriveCart sends to your Gmail. Only the date, product and amount are kept. Orders from your own addresses and anything with "test" in the billing name are hidden.</p></div>
+          <button class="btn primary" id="salesBtn" type="button">Check Gmail for sales</button></div>
+        <div id="salesOut"></div>
       </div>
       <div class="grid g2">
         <div class="card">
@@ -303,22 +364,21 @@ td.mono, th.r, td.r { text-align: right; }
       </div>
       <div class="grid g2">
         <div class="card">
-          <h3>Getting your two Claude chats into the dashboard</h3>
-          <p class="muted" style="font-size:13px;margin:6px 0 10px">Project chats are not readable by any connector available here, so the dashboard cannot see them directly. A shared table fixes that: the chat writes the schedule, the dashboard reads it.</p>
+          <h3>Your Claude planning chat</h3>
+          <p class="muted" style="font-size:13px;margin:6px 0 10px">No connector can read project chats, so this is a two-way paste.</p>
           <ol class="steps">
-            <li>Paste the prompt below at the end of each scheduling chat.</li>
-            <li>Paste the table it returns into a Notion database called "Content Calendar" (Notion is already connected to this session).</li>
-            <li>The dashboard reads that database instead of the Drive folder, so stages and dates come from the chats.</li>
+            <li>In Production, open "Sync with your Claude chat and Drive" and press <b>Copy board for my chat</b>. Paste it at the start of a planning session.</li>
+            <li>When the chat reschedules or adds scripts, ask it to reply with the same table.</li>
+            <li>Paste that table back into the box and press <b>Preview import</b>, then <b>Apply</b>. Dates and columns update, and unknown videos arrive as new cards.</li>
           </ol>
-          <div class="out" id="chatPrompt" style="margin-top:12px">Output our current content calendar as a table with these columns: Title | Format (Long or Short) | Target publish date (YYYY-MM-DD) | Stage (Research, Scripted, Filmed, Editing, Thumbnail and title, Scheduled, Published) | Primary keyword | Script link | Lead magnet or course CTA. One row per video, soonest first.</div>
-          <div class="row" style="display:flex;gap:8px;margin-top:10px"><button class="btn" id="copyPrompt" type="button">Copy prompt</button></div>
         </div>
         <div class="card">
-          <h3>Why the business tools take a middle layer</h3>
-          <p style="color:var(--ink-2);font-size:14px;margin-top:6px">A page like this cannot safely hold API keys for Kit, ThriveCart or Google Analytics. Two clean ways to connect them:</p>
-          <ol class="steps" style="margin-top:10px">
-            <li><b>Zapier or Make into a Google Sheet.</b> New Kit subscriber, ThriveCart purchase and a daily GA4 export each append a row. This dashboard reads the Sheet through the Drive connector that is already connected. Lowest effort.</li>
-            <li><b>A connector for each tool.</b> Cleaner and live, but needs a Kit or GA4 connector added to your Claude account, which is not there today.</li>
+          <h3>Connect Kit</h3>
+          <p class="muted" style="font-size:13px;margin:6px 0 10px">Kit publishes an official connector for Claude, so Zapier is not needed.</p>
+          <ol class="steps">
+            <li>In claude.ai, open Settings, then Connectors, find <b>Kit</b>, and sign in.</li>
+            <li>Come back to this project and tell me it's connected. I need to read its tools before I can build the panel.</li>
+            <li>The panel will show subscribers by day and form, and broadcast engagement. Which videos drive signups needs one Kit form per call-to-action.</li>
           </ol>
         </div>
       </div>
@@ -367,8 +427,8 @@ const CTA_MAP = {
 };
 
 const STAGES = [
-  {k:"research",l:"Research"},{k:"scripted",l:"Scripted"},{k:"filmed",l:"Filmed"},
-  {k:"editing",l:"Editing"},{k:"ready",l:"Title and thumbnail"},{k:"scheduled",l:"Scheduled"},{k:"published",l:"Published"}
+  {k:"planned",l:"Planned"},{k:"scripted",l:"Scripted"},{k:"filmed",l:"Filmed, needs editing"},
+  {k:"ready",l:"Edited, needs thumbnail and setup"},{k:"scheduled",l:"Scheduled"},{k:"published",l:"Published"}
 ];
 const DRIVE = id => "https://docs.google.com/document/d/" + id + "/edit";
 const ITEMS = [
@@ -530,10 +590,10 @@ function showTip(e, html) { tip.innerHTML = html; tip.style.opacity = 1; const x
 function hideTip() { tip.style.opacity = 0; }
 
 /* ============================ SAVED STATE (db when available, else this browser) ============================ */
-const saved = { pipeline: {}, comments: {} };
+const saved = { pipeline: {}, comments: {}, sales: {} };
 let dbh = null;
 const LS = "content-hq-v1";
-function lsLoad() { try { const j = JSON.parse(localStorage.getItem(LS) || "null"); if (j) { saved.pipeline = j.pipeline || {}; saved.comments = j.comments || {}; } } catch (e) {} }
+function lsLoad() { try { const j = JSON.parse(localStorage.getItem(LS) || "null"); if (j) { saved.pipeline = j.pipeline || {}; saved.comments = j.comments || {}; saved.sales = j.sales || {}; } } catch (e) {} }
 function lsSave() { try { localStorage.setItem(LS, JSON.stringify(saved)); } catch (e) {} }
 async function persist(coll, id, data) {
   saved[coll][id] = data;
@@ -545,9 +605,10 @@ async function initDb() {
   if (!dbh) return;
   const err = () => { dbh = null; };
   dbh.collection("pipeline").onSnapshot(s => { s.docs.forEach(d => { saved.pipeline[d.id] = d.data(); }); renderPipeline(); renderBadges(); }, err);
+  dbh.collection("sales").onSnapshot(s => { s.docs.forEach(d => { saved.sales[d.id] = d.data(); }); renderSales(); renderFunnel(); }, err);
   dbh.collection("comments").onSnapshot(s => { s.docs.forEach(d => { saved.comments[d.id] = d.data(); }); renderComments(); renderBadges(); }, err);
 }
-const itemState = it => ({ stage: DEFAULT_STAGE, date: it.date || null, ...(saved.pipeline[it.id] || {}) });
+const itemState = it => { const s = { stage: DEFAULT_STAGE, date: it.date || null, ...(saved.pipeline[it.id] || {}) }; s.stage = ({ research: "planned", editing: "filmed" })[s.stage] || s.stage; return s; };
 const commentDone = c => !!(saved.comments[c.id] && saved.comments[c.id].done) || c.autoDone;
 const commentDraft = c => (saved.comments[c.id] && saved.comments[c.id].draft != null) ? saved.comments[c.id].draft : (c.draft || "");
 
@@ -562,12 +623,12 @@ function dayLabel(i) { return short(addDays(STATE.daily.start, i)); }
 function renderKpis() {
   const d = derived(), D = STATE.daily;
   const waiting = COMMENTS.filter(c => c.tri !== "skip" && !commentDone(c)).length;
-  const dated = ITEMS.filter(it => itemState(it).date && itemState(it).stage !== "published").length;
+  const dated = allItems().filter(it => itemState(it).date && itemState(it).stage !== "published").length;
   const k = [
     ["Subscribers", fmt(D.subs[d.n - 1]), `<b>+${fmt(d.subsGain)}</b> since ${short(D.start)}`],
     ["Views, last 30 days", fmt(d.viewsGain), `${fmt(d.viewsGain / (d.n - 1))} a day on average`],
     ["Subscribers per 1,000 views", d.per1k.toFixed(1), "Across the whole channel, not one video"],
-    ["Comments waiting", String(waiting), `${ITEMS.length} scripts queued, ${dated} dated`]
+    ["Comments waiting", String(waiting), `${allItems().filter(it => itemState(it).stage !== "published").length} videos in production, ${dated} dated`]
   ];
   $("#kpis").innerHTML = k.map(x => `<div class="card kpi"><div class="eyebrow">${x[0]}</div><div class="num">${x[1]}</div><div class="sub">${x[2]}</div></div>`).join("");
 }
@@ -634,13 +695,13 @@ function renderInsights() {
   const top2 = [...vs].sort((a, b) => b.views - a.views).slice(0, 2), top2s = top2.reduce((s, v) => s + v.views, 0);
   const course = vs.filter(v => /Intrusive/.test(v.title)), others = vs.filter(v => !/Intrusive/.test(v.title) && daysBetween(v.pub, STATE.asOf) >= 7);
   const avg = a => a.reduce((s, v) => s + v.views, 0) / a.length;
-  const stale = ITEMS.filter(it => it.fmt === "long" && !itemState(it).date).length;
+  const stale = allItems().filter(it => it.fmt === "long" && !itemState(it).date && itemState(it).stage !== "published").length;
   const unrep = COMMENTS.filter(c => c.tri !== "skip" && !commentDone(c)).length;
   const L = [
     {p:"High", cls:"crit", h:"Make your two biggest videos work harder", b:`${esc(top2[0].title)} (${fmt(top2[0].views)} views) and ${esc(top2[1].title)} (${fmt(top2[1].views)}) account for ${(top2s / tot * 100).toFixed(0)}% of views across your last ${vs.length} public videos. Their pinned comments predate the 50 threads pulled here, so it is unconfirmed whether they carry a Kit guide or the course link.`, act:`<b>Do this:</b> open both videos and check the description and pinned comment for the First 30 Days guide and the course. These two carry the most evergreen traffic.`, ev:"Source: VidIQ video stats, Oct 22"},
     {p:"Test", cls:"warn", h:"Longer videos are leading, but only two data points", b:`Your two top performers run ${top2.map(v => v.min.toFixed(0)).join(" and ")} minutes. The 7 and 10 minute videos trail (${fmt(vs.find(v => v.id === "0sMx6by0NUE").views)} and ${fmt(vs.find(v => v.id === "Mg8IWEGUlrc").views)}), but the 8-minute "affair is really over" video sits at ${fmt(vs.find(v => v.id === "y6vDruqmMCQ").views)}, so topic is likely doing as much as length.`, act:`<b>Do this:</b> film your 20-25 minute porn video next to the 5-6 minute shorts and compare views per day at day 14.`, ev:"Pattern across 11 videos. Treat as a hypothesis."},
     {p:"Funnel", cls:"acc", h:"Course-topic videos draw a smaller audience than your other uploads", b:`The two intrusive-thoughts videos average ${fmt(avg(course))} views against ${fmt(avg(others))} for the other ${others.length} videos older than a week. The people most likely to buy are probably already watching your remorse and apology videos.`, act:`<b>Do this:</b> move the course call-to-action into the high-traffic videos, and use the intrusive-thoughts videos as the second step.`, ev:"Hypothesis. The Funnel tab fills in once ThriveCart is connected."},
-    {p:"Queue", cls:"warn", h:`${stale} long scripts have no publish date`, b:`The highest-volume script in the queue, "Surviving Infidelity: The 4 Stages" (29,811 searches a month per your script), was drafted Aug 31 and is not dated. The holiday video needs to publish by about Nov 12 to meet Thanksgiving.`, act:`<b>Do this:</b> open Production and use "Suggest a schedule", then adjust.`, ev:"Source: Google Drive To Film folder"},
+    {p:"Queue", cls:"warn", h:`${stale} long scripts have no publish date`, b:`The highest-volume script in the queue, "Surviving Infidelity: The 4 Stages" (29,811 searches a month per your script), was drafted Aug 31 and is not dated. The holiday video needs to publish by about Nov 12 to meet Thanksgiving.`, act:`<b>Do this:</b> open Production, switch to Calendar, and use "Suggest a schedule".`, ev:"Source: Google Drive To Film folder"},
     {p:"Replies", cls:"warn", h:`${unrep} comments are waiting for an answer`, b:`Most are from people in the first weeks after discovery, asking a direct question. Drafts are written for each, in your tone from your past replies.`, act:`<b>Do this:</b> open Comments and clear the "Reply" group first. About 20 minutes.`, ev:"Source: VidIQ, 50 most recent threads, Oct 8 to Oct 22"},
     {p:"Low", cls:"", h:"Tag sets are copy-pasted", b:`Eleven recent videos share the same 12 tags, and the "4 Steps" video has none. Tags carry little weight on YouTube, so this is housekeeping, not a growth lever.`, act:`<b>Do this:</b> only if you are in VidIQ anyway. Skip otherwise.`, ev:"Source: VidIQ video tags"}
   ];
@@ -648,104 +709,226 @@ function renderInsights() {
   $("#ideas").innerHTML = IDEAS.map(i => `<div class="item"><div class="ttl">"${esc(i.q)}"</div><div class="note">${esc(i.why)}</div><div class="muted" style="font-size:12px">From ${esc(i.from)}</div></div>`).join("");
 }
 
-/* ============================ PIPELINE ============================ */
-let pipeFilter = "all";
-function stageIdx(k) { return STAGES.findIndex(s => s.k === k); }
+/* ============================ PIPELINE (board and calendar) ============================ */
+let pipeFilter = "all", pipeView = "board", showPub = false;
+const today = () => iso(new Date());
+const stageIdx = k => STAGES.findIndex(s => s.k === k);
+const stageLabel = k => (STAGES.find(s => s.k === k) || {}).l || k;
+function customItems() {
+  return Object.entries(saved.pipeline).filter(([, v]) => v && v.custom && !v.removed).map(([id, v]) => ({ id, title: v.title, fmt: v.fmt || "long", len: v.len || "", note: v.note || "", doc: null, link: v.link || "", drafted: v.drafted || null }));
+}
+const allItems = () => ITEMS.concat(customItems());
+const byDate = (a, b) => { const da = itemState(a).date, db = itemState(b).date; if (da && db) return da.localeCompare(db); if (da) return -1; if (db) return 1; return (a.prio ?? 99) - (b.prio ?? 99); };
+const pipeFilt = it => pipeFilter === "all" || it.fmt === pipeFilter;
+function risk(st) {
+  if (!st.date || st.stage === "published") return null;
+  const d = daysBetween(today(), st.date), si = stageIdx(st.stage);
+  if (d < 0) return { cls: "crit", t: `${-d} day${d === -1 ? "" : "s"} past publish date` };
+  const need = d <= 3 ? 4 : d <= 7 ? 3 : d <= 14 ? 2 : 0;
+  if (si >= need) return null;
+  return { cls: (need - si >= 2 || d <= 3) ? "crit" : "warn", t: `Due in ${d} day${d === 1 ? "" : "s"}, still ${stageLabel(st.stage).toLowerCase()}` };
+}
+const scriptHref = it => it.doc ? DRIVE(it.doc) : it.link;
+function kcard(it) {
+  const st = itemState(it), r = risk(st), si = stageIdx(st.stage), href = scriptHref(it);
+  return `<div class="kcard" draggable="true" data-id="${esc(it.id)}">
+    <div class="kt">${esc(it.title)}</div>
+    <div class="chips"><span class="pill ${it.fmt === "long" ? "acc" : ""}">${it.fmt === "long" ? "Long" : "Short"}${it.len ? " · " + esc(it.len) : ""}</span>${it.dueBy ? `<span class="pill warn">Publish by ${short(it.dueBy)}</span>` : ""}${r ? `<span class="pill ${r.cls}">${esc(r.t)}</span>` : ""}</div>
+    ${it.note ? `<details><summary>Notes</summary><p class="note">${esc(it.note)}</p></details>` : ""}
+    <div class="kctl"><button class="btn small" type="button" data-mv="-1" ${si <= 0 ? "disabled" : ""} aria-label="Move back one column" title="Move back">‹</button><input type="date" data-act="date" value="${st.date || ""}" aria-label="Publish date"><button class="btn small" type="button" data-mv="1" ${si >= STAGES.length - 1 ? "disabled" : ""} aria-label="Move forward one column" title="${st.stage === "scheduled" ? "Mark published" : "Move forward"}">›</button>${href ? `<a class="small-link" href="${esc(href)}" target="_blank" rel="noopener">Script</a>` : ""}</div></div>`;
+}
 function itemCard(it) {
-  const st = itemState(it), si = stageIdx(st.stage);
-  const seasonal = it.dueBy ? `<span class="pill warn">Publish by ${short(it.dueBy)}</span>` : "";
-  const stale = daysBetween(it.drafted, STATE.asOf) > 30 && si <= 1 ? `<span class="pill">Drafted ${daysBetween(it.drafted, STATE.asOf)} days ago</span>` : "";
-  return `<div class="item" data-id="${it.id}">
-    <div class="top1"><div class="ttl">${esc(it.title)}</div><div class="chips"><span class="pill ${it.fmt === "long" ? "acc" : ""}">${it.fmt === "long" ? "Long" : "Short"} · ${esc(it.len)}</span>${seasonal}${stale}</div></div>
-    <div class="note">${esc(it.note)}</div>
-    <div class="prog" aria-hidden="true">${[0,1,2,3,4,5].map(i => `<i class="${i <= si ? "on" : ""}"></i>`).join("")}</div>
+  const st = itemState(it), si = stageIdx(st.stage), r = risk(st), href = scriptHref(it);
+  return `<div class="item" data-id="${esc(it.id)}">
+    <div class="top1"><div class="ttl">${esc(it.title)}</div><div class="chips"><span class="pill ${it.fmt === "long" ? "acc" : ""}">${it.fmt === "long" ? "Long" : "Short"}${it.len ? " · " + esc(it.len) : ""}</span>${it.dueBy ? `<span class="pill warn">Publish by ${short(it.dueBy)}</span>` : ""}${r ? `<span class="pill ${r.cls}">${esc(r.t)}</span>` : ""}</div></div>
+    ${it.note ? `<div class="note">${esc(it.note)}</div>` : ""}
     <div class="ctl">
-      <label class="muted" style="font-size:12px">Stage <select data-act="stage">${STAGES.map(s => `<option value="${s.k}" ${s.k === st.stage ? "selected" : ""}>${s.l}</option>`).join("")}</select></label>
+      <label class="muted" style="font-size:12px">Column <select data-act="stage">${STAGES.map(s => `<option value="${s.k}" ${s.k === st.stage ? "selected" : ""}>${s.l}</option>`).join("")}</select></label>
       <label class="muted" style="font-size:12px">Publish <input type="date" data-act="date" value="${st.date || ""}"></label>
-      <a href="${DRIVE(it.doc)}" target="_blank" rel="noopener" style="font-size:13px">Open script</a>
+      ${href ? `<a href="${esc(href)}" target="_blank" rel="noopener" style="font-size:13px">Open script</a>` : ""}
     </div></div>`;
 }
-function weekStarts() { const s = mondayOf(STATE.asOf), a = []; for (let i = 0; i < 9; i++) a.push(addDays(s, i * 7)); return a; }
-function renderPipeline() {
-  const open = ITEMS.filter(it => itemState(it).stage !== "published");
-  const filt = it => pipeFilter === "all" || it.fmt === pipeFilter;
-  /* stage strip */
-  $("#stageStrip").innerHTML = STAGES.map(s => {
-    const n = ITEMS.filter(it => itemState(it).stage === s.k).length;
-    return `<div class="stage-box ${n ? "has" : ""}"><div class="n">${n}</div><div class="l">${s.l}</div></div>`;
+function renderBoard() {
+  const items = allItems().filter(pipeFilt);
+  $("#board").innerHTML = STAGES.slice(0, 5).map(s => {
+    const list = items.filter(it => itemState(it).stage === s.k).sort(byDate);
+    return `<div class="col" data-stage="${s.k}"><div class="col-h"><h3>${s.l}</h3><span class="count">${list.length}</span></div><div class="col-body" data-drop="${s.k}">${list.map(kcard).join("") || `<div class="empty">Drop a card here</div>`}</div></div>`;
   }).join("");
-  $("#pipeFilters").innerHTML = [["all","All"],["long","Long"],["short","Short"]].map(f => `<button class="chip" type="button" data-f="${f[0]}" aria-pressed="${pipeFilter === f[0]}">${f[1]}</button>`).join("");
-  /* weeks */
-  const ws = weekStarts(), target = 1;
-  const pubs = STATE.videos.map(v => ({kind:"pub", date:v.pub, v}));
-  let html = "";
-  ws.forEach((w, wi) => {
-    const end = addDays(w, 6);
-    const inWeek = d => d >= w && d <= end;
-    const sched = open.filter(it => filt(it) && itemState(it).date && inWeek(itemState(it).date)).sort((a, b) => itemState(a).date.localeCompare(itemState(b).date));
-    const pubd = wi === 0 ? pubs.filter(p => inWeek(p.date) && (pipeFilter === "all" || pipeFilter === "long")) : [];
-    const longs = sched.filter(it => it.fmt === "long").length + (wi === 0 ? pubd.length : 0);
-    let slots = pubd.map(p => `<div class="item pub"><div class="top1"><div class="ttl">${esc(p.v.title)}</div><div class="chips"><span class="pill good">Published ${short(p.date)}</span></div></div></div>`).join("");
-    slots += sched.map(itemCard).join("");
-    if (wi > 0 && longs < target && (pipeFilter !== "short")) slots += `<div class="open">Open slot: no long video dated this week. Pick one from "Needs a date" below.</div>`;
-    if (!slots) slots = `<div class="open">Nothing here.</div>`;
-    html += `<div class="week"><div class="wl">${short(w)} – ${short(end)}<small>${wi === 0 ? "This week" : "Week " + wi}</small></div><div class="slots">${slots}</div></div>`;
-  });
-  const later = open.filter(it => filt(it) && itemState(it).date && itemState(it).date > addDays(ws[ws.length - 1], 6));
-  if (later.length) html += `<div class="week"><div class="wl">Later</div><div class="slots">${later.map(itemCard).join("")}</div></div>`;
-  $("#weeks").innerHTML = html;
-  const und = open.filter(it => filt(it) && !itemState(it).date).sort((a, b) => (a.prio ?? 99) - (b.prio ?? 99));
+  const pub = items.filter(it => itemState(it).stage === "published").sort(byDate);
+  $("#pubWrap").innerHTML = `<button class="chip" type="button" data-togglepub aria-pressed="${showPub}">Published ${pub.length}</button>${showPub ? `<div class="list" style="margin-top:10px">${pub.map(itemCard).join("") || `<div class="muted" style="font-size:13px">Nothing published from the script queue yet. Cards you move to Published land here.</div>`}</div>` : ""}`;
+}
+function weekStarts() { const s = mondayOf(today()), a = []; for (let i = 0; i < 9; i++) a.push(addDays(s, i * 7)); return a; }
+function monthGrid(y, m) {
+  const first = new Date(Date.UTC(y, m, 1, 12)), lead = (first.getUTCDay() + 6) % 7, n = new Date(Date.UTC(y, m + 1, 0, 12)).getUTCDate();
+  const items = allItems().filter(pipeFilt), t = today();
+  let cells = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map(d => `<div class="dow">${d}</div>`).join("");
+  for (let i = 0; i < lead; i++) cells += `<div class="day blank"></div>`;
+  for (let d = 1; d <= n; d++) {
+    const ds = iso(new Date(Date.UTC(y, m, d, 12)));
+    const chips = items.filter(it => itemState(it).date === ds).map(it => { const st = itemState(it); return `<span class="cs cs-${st.stage}" title="${esc(it.title)} (${esc(stageLabel(st.stage))})">${esc(it.title.replace(/^["“]/, "").slice(0, 22))}${it.title.length > 22 ? "…" : ""}</span>`; }).join("")
+      + (pipeFilter === "short" ? "" : STATE.videos.filter(v => v.pub === ds).map(v => `<span class="cs cs-published" title="${esc(v.title)} (published)">${esc(v.title.slice(0, 22))}…</span>`).join(""));
+    cells += `<div class="day ${ds === t ? "today" : ""}"><span class="dn">${d}</span>${chips}</div>`;
+  }
+  return `<h3 style="margin:16px 0 8px">${["January","February","March","April","May","June","July","August","September","October","November","December"][m]} ${y}</h3><div class="tblwrap"><div class="month">${cells}</div></div>`;
+}
+function renderCalendar() {
+  const t = dateObj(today()), y = t.getUTCFullYear(), m = t.getUTCMonth();
+  $("#months").innerHTML = [0, 1, 2].map(i => monthGrid(y + Math.floor((m + i) / 12), (m + i) % 12)).join("");
+  $("#calLegend").innerHTML = STAGES.map(s => `<span class="cs cs-${s.k}">${s.l}</span>`).join("");
+  const open = allItems().filter(it => itemState(it).stage !== "published");
+  const ws = weekStarts().slice(1).filter(w => !open.some(it => it.fmt === "long" && itemState(it).date && itemState(it).date >= w && itemState(it).date <= addDays(w, 6)));
+  $("#openWeeks").textContent = ws.length ? `Weeks with no long video dated: ${ws.map(short).join(", ")}.` : "Every upcoming week has a long video dated.";
+  const und = open.filter(it => pipeFilt(it) && !itemState(it).date).sort(byDate);
   $("#undated").innerHTML = und.length ? und.map(itemCard).join("") : `<div class="card muted">Every script has a date.</div>`;
-  renderBadges();
+}
+function renderPipeline() {
+  $("#pipeViews").innerHTML = [["board","Board"],["calendar","Calendar"]].map(f => `<button class="chip" type="button" data-v="${f[0]}" aria-pressed="${pipeView === f[0]}">${f[1]}</button>`).join("");
+  $("#pipeFilters").innerHTML = [["all","All"],["long","Long"],["short","Short"]].map(f => `<button class="chip" type="button" data-f="${f[0]}" aria-pressed="${pipeFilter === f[0]}">${f[1]}</button>`).join("");
+  $("#viewBoard").hidden = pipeView !== "board"; $("#viewCal").hidden = pipeView !== "calendar";
+  renderBoard(); renderCalendar(); renderBadges();
 }
 function renderBadges() {
-  const open = ITEMS.filter(it => itemState(it).stage !== "published").length;
-  $("#cPipe").textContent = open;
+  $("#cPipe").textContent = allItems().filter(it => itemState(it).stage !== "published").length;
   const w = COMMENTS.filter(c => c.tri !== "skip" && !commentDone(c)).length;
   $("#cCom").textContent = w; $("#cCom").classList.toggle("alert", w > 0);
   renderKpis();
 }
+async function moveItem(id, to) {
+  const it = allItems().find(x => x.id === id); if (!it) return;
+  const cur = { ...(saved.pipeline[id] || {}), ...itemState(it) };
+  if (cur.stage === to) return;
+  await persist("pipeline", id, { ...cur, stage: to }); renderPipeline();
+}
 function suggestPlan() {
-  const ws = weekStarts().slice(1);   /* next 8 weeks */
-  const used = new Set(ITEMS.filter(it => it.fmt === "long" && itemState(it).date).map(it => mondayOf(itemState(it).date)));
-  const free = ws.filter(w => !used.has(w)).map(w => {
-    let d = addDays(w, 3);                              /* Thursday */
-    if (d === "2026-11-26") d = "2026-11-25";           /* not Thanksgiving */
-    return d;
-  });
-  const pool = ITEMS.filter(it => it.fmt === "long" && !itemState(it).date && itemState(it).stage !== "published").sort((a, b) => (a.prio ?? 99) - (b.prio ?? 99));
+  const ws = weekStarts().slice(1);
+  const items = allItems();
+  const used = new Set(items.filter(it => it.fmt === "long" && itemState(it).date).map(it => mondayOf(itemState(it).date)));
+  const free = ws.filter(w => !used.has(w)).map(w => { const d = addDays(w, 3); return d === "2026-11-26" ? "2026-11-25" : d; });
+  const pool = items.filter(it => it.fmt === "long" && !itemState(it).date && itemState(it).stage !== "published").sort((a, b) => (a.prio ?? 99) - (b.prio ?? 99));
   const rows = [];
-  /* seasonal items first, into the slot nearest before their due date */
-  pool.filter(it => it.dueBy).forEach(it => {
-    const cands = free.filter(d => d <= it.dueBy); const d = cands.length ? cands[cands.length - 1] : free[0];
-    if (d) { rows.push({it, d}); free.splice(free.indexOf(d), 1); }
-  });
-  pool.filter(it => !it.dueBy).forEach(it => { const d = free.shift(); if (d) rows.push({it, d}); });
+  pool.filter(it => it.dueBy).forEach(it => { const c = free.filter(d => d <= it.dueBy), d = c.length ? c[c.length - 1] : free[0]; if (d) { rows.push({ it, d }); free.splice(free.indexOf(d), 1); } });
+  pool.filter(it => !it.dueBy).forEach(it => { const d = free.shift(); if (d) rows.push({ it, d }); });
   rows.sort((a, b) => a.d.localeCompare(b.d));
   window.__plan = rows;
   const left = pool.length - rows.length;
-  $("#planOut").innerHTML = `<div class="plan"><h3>Suggested long-video schedule</h3><p class="muted" style="font-size:13px;margin-top:4px">One long video per open week on Thursdays, seasonal first, then by search volume and audience fit. Dates are suggestions until you apply them.</p>
+  $("#planOut").innerHTML = `<div class="plan"><h3>Suggested long-video schedule</h3><p class="muted" style="font-size:13px;margin-top:4px">One long video per open week on Thursdays, seasonal first, then by search volume and audience fit. Nothing changes until you apply it.</p>
     <div class="tblwrap"><table><thead><tr><th>Publish</th><th>Video</th><th>Why here</th></tr></thead><tbody>${rows.map(r => `<tr><td class="mono">${short(r.d)}</td><td>${esc(r.it.title)}</td><td class="muted">${esc(r.it.dueBy ? "Seasonal deadline " + short(r.it.dueBy) : r.it.note)}</td></tr>`).join("")}</tbody></table></div>
     ${left > 0 ? `<p class="muted" style="font-size:12.5px;margin-top:6px">${left} more long script${left > 1 ? "s" : ""} won't fit in 8 weeks at one a week.</p>` : ""}
     <div style="display:flex;gap:8px;margin-top:12px"><button class="btn primary" id="applyPlan" type="button">Apply these dates</button><button class="btn" id="dropPlan" type="button">Dismiss</button></div></div>`;
 }
+
+/* ---- sync with chat (paste in, copy out) and Drive ---- */
+function fixYear(mi, d, y) { if (!y) { y = +today().slice(0, 4); if (daysBetween(today(), iso(new Date(Date.UTC(y, mi, d, 12)))) < -60) y++; } return iso(new Date(Date.UTC(y, mi, d, 12))); }
+function parseDate(s) {
+  s = (s || "").trim(); let m = /(\d{4})-(\d{2})-(\d{2})/.exec(s); if (m) return m[0];
+  m = /^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?/.exec(s); if (m) { let y = m[3] ? +m[3] : null; if (y && y < 100) y += 2000; return fixYear(+m[1] - 1, +m[2], y); }
+  m = /([A-Za-z]{3})[a-z]*\.?\s+(\d{1,2})(?:st|nd|rd|th)?(?:,?\s*(\d{4}))?/.exec(s);
+  if (m) { const mi = MONTHS.findIndex(x => x.toLowerCase() === m[1].toLowerCase()); if (mi >= 0) return fixYear(mi, +m[2], m[3] ? +m[3] : null); }
+  return null;
+}
+function parseStage(s) {
+  s = (s || "").toLowerCase();
+  if (/publish|posted|live/.test(s)) return "published"; if (/schedul/.test(s)) return "scheduled";
+  if (/thumb|set ?up|edited/.test(s)) return "ready"; if (/film|edit|descript|shot/.test(s)) return "filmed";
+  if (/script/.test(s)) return "scripted"; if (/plan|idea|research|outline/.test(s)) return "planned"; return null;
+}
+const normTitle = s => String(s).toLowerCase().replace(/\*\*/g, "").replace(/^\W*(short|long)\W*/, "").replace(/[^a-z0-9]+/g, " ").trim();
+const cleanTitle = s => String(s).replace(/\*\*/g, "").replace(/^\s*(SHORT|LONG)\s*[-—:]*\s*/i, "").replace(/^["“]+|["”]+$/g, "").trim();
+function matchItem(title) {
+  const n = normTitle(title); if (!n) return null;
+  return allItems().find(it => normTitle(it.title) === n) || allItems().find(it => { const m = normTitle(it.title); return n.length > 12 && m.length > 12 && (m.includes(n) || n.includes(m)); }) || null;
+}
+function parseTable(text) {
+  const rows = [];
+  text.split(/\r?\n/).forEach(line => {
+    if (!line.includes("|") || /^\s*\|?\s*:?-{2,}/.test(line)) return;
+    const c = line.split("|").map(x => x.trim()); if (c[0] === "") c.shift(); if (c.length && c[c.length - 1] === "") c.pop();
+    if (c.length < 2 || /^title$/i.test(c[0])) return;
+    const fmt = /short/i.test(c[1]) ? "short" : /long/i.test(c[1]) ? "long" : null;
+    rows.push({ title: cleanTitle(c[0]), fmt, date: parseDate(c[2]), stage: parseStage(c[3]), link: (c[4] || "").match(/https?:\/\/\S+/)?.[0] || "", raw: c });
+  });
+  return rows;
+}
+function previewImport() {
+  const rows = parseTable($("#importTxt").value);
+  if (!rows.length) { $("#importOut").innerHTML = `<p class="muted" style="font-size:13px;margin-top:8px">No table rows found. Paste the chat's table with | between columns.</p>`; return; }
+  const plan = rows.map(r => {
+    const it = matchItem(r.title), cur = it ? itemState(it) : null;
+    const ch = []; if (cur) { if (r.stage && r.stage !== cur.stage) ch.push(`column: ${stageLabel(cur.stage)} → ${stageLabel(r.stage)}`); if (r.date && r.date !== cur.date) ch.push(`date: ${cur.date ? short(cur.date) : "none"} → ${short(r.date)}`); }
+    return { r, it, ch };
+  });
+  window.__imp = plan;
+  const news = plan.filter(p => !p.it).length, upd = plan.filter(p => p.it && p.ch.length).length;
+  $("#importOut").innerHTML = `<div class="plan" style="margin-top:10px"><b>${upd} update${upd === 1 ? "" : "s"}, ${news} new card${news === 1 ? "" : "s"}</b>
+    <ul style="margin:8px 0 0;padding-left:18px;font-size:13px;display:grid;gap:3px">${plan.map(p => p.it ? (p.ch.length ? `<li>${esc(p.it.title)}: ${esc(p.ch.join(", "))}</li>` : "") : `<li><b>New:</b> ${esc(p.r.title)} (${esc(stageLabel(p.r.stage || "scripted"))}${p.r.date ? ", " + short(p.r.date) : ""})</li>`).join("") || "<li>Nothing would change.</li>"}</ul>
+    <div style="display:flex;gap:8px;margin-top:10px"><button class="btn primary" id="applyImport" type="button">Apply</button></div></div>`;
+}
+async function applyImport() {
+  for (const p of window.__imp || []) {
+    if (p.it) {
+      if (!p.ch.length) continue;
+      const cur = { ...(saved.pipeline[p.it.id] || {}), ...itemState(p.it) };
+      await persist("pipeline", p.it.id, { ...cur, stage: p.r.stage || cur.stage, date: p.r.date || cur.date });
+    } else {
+      const id = "chat-" + normTitle(p.r.title).replace(/ /g, "-").slice(0, 48);
+      await persist("pipeline", id, { custom: true, title: p.r.title, fmt: p.r.fmt || "long", note: "Added from your planning chat.", link: p.r.link, stage: p.r.stage || "planned", date: p.r.date || null });
+    }
+  }
+  $("#importOut").innerHTML = ""; $("#importTxt").value = ""; renderPipeline(); toast("Board updated");
+}
+function boardText() {
+  const rows = allItems().sort((a, b) => stageIdx(itemState(a).stage) - stageIdx(itemState(b).stage) || byDate(a, b));
+  const head = "Here is my current content board. Keep these column names. Update dates, add ideas, and send the whole thing back in the same table format.\nStages: " + STAGES.map(s => s.l).join(" | ") + "\n\n| Title | Format | Publish date | Stage | Script link |\n|---|---|---|---|---|\n";
+  return head + rows.map(it => { const st = itemState(it); return `| ${it.title.replace(/\|/g, "/")} | ${it.fmt === "long" ? "Long" : "Short"} | ${st.date || ""} | ${stageLabel(st.stage)} | ${scriptHref(it) || ""} |`; }).join("\n");
+}
+async function driveSync() {
+  const btn = $("#driveSync"), note = $("#driveNote"); btn.disabled = true; note.textContent = "Checking Drive…";
+  const mcp = await use("mcp");
+  if (!mcp) { note.textContent = "Drive sync isn't available in this view."; btn.disabled = false; return; }
+  try {
+    const r = await mcp.callTool("Google Drive", "search_files", { query: "parentId = '1Xgf6oQh18jREQ_za2aC_r4GkbQrXXT6y' and mimeType = 'application/vnd.google-apps.document'", pageSize: 50, excludeContentSnippets: true });
+    const o = asObj(r), files = (o && o.files) || [];
+    const known = new Set(allItems().map(it => it.doc).filter(Boolean).concat(Object.values(saved.pipeline).map(v => v && v.driveId).filter(Boolean)));
+    let added = 0;
+    for (const f of files) {
+      if (known.has(f.id)) continue;
+      const title = cleanTitle(f.title || "");
+      if (matchItem(title)) continue;
+      await persist("pipeline", "drive-" + f.id, { custom: true, driveId: f.id, title, fmt: /^\s*short/i.test(f.title || "") ? "short" : "long", note: "New script found in your To Film folder.", link: f.viewUrl || ("https://docs.google.com/document/d/" + f.id + "/edit"), stage: "scripted", date: null }); added++;
+    }
+    note.textContent = added ? `Added ${added} new script${added === 1 ? "" : "s"} to Scripted.` : `Checked ${files.length} scripts in "To Film". Nothing new.`;
+    renderPipeline();
+  } catch (e) {
+    note.textContent = ({ needs_reauth: "Reconnect Google Drive in claude.ai Settings, Connectors.", not_in_manifest: "Drive access was declined for this page.", server_not_connected: "Add Google Drive in claude.ai Settings, Connectors." })[e.code] || "Couldn't reach Drive. Try again in a minute.";
+  }
+  btn.disabled = false;
+}
 document.addEventListener("click", async e => {
   const f = e.target.closest("[data-f]"); if (f) { pipeFilter = f.dataset.f; renderPipeline(); return; }
+  const v = e.target.closest("[data-v]"); if (v) { pipeView = v.dataset.v; renderPipeline(); return; }
+  if (e.target.closest("[data-togglepub]")) { showPub = !showPub; renderBoard(); return; }
+  const mv = e.target.closest("[data-mv]"); if (mv) { const id = mv.closest("[data-id]").dataset.id, it = allItems().find(x => x.id === id), i = stageIdx(itemState(it).stage) + (+mv.dataset.mv); if (STAGES[i]) await moveItem(id, STAGES[i].k); return; }
   if (e.target.id === "planBtn") { suggestPlan(); return; }
   if (e.target.id === "dropPlan") { $("#planOut").innerHTML = ""; return; }
-  if (e.target.id === "applyPlan") {
-    e.target.disabled = true;
-    for (const r of window.__plan || []) { await persist("pipeline", r.it.id, { ...itemState(r.it), date: r.d }); }
-    $("#planOut").innerHTML = ""; renderPipeline(); toast("Dates applied"); return;
-  }
+  if (e.target.id === "applyPlan") { e.target.disabled = true; for (const r of window.__plan || []) { await persist("pipeline", r.it.id, { ...(saved.pipeline[r.it.id] || {}), ...itemState(r.it), date: r.d }); } $("#planOut").innerHTML = ""; renderPipeline(); toast("Dates applied"); return; }
+  if (e.target.id === "copyBoard") { copyText(boardText(), "Board copied. Paste it into your planning chat."); return; }
+  if (e.target.id === "importPrev") { previewImport(); return; }
+  if (e.target.id === "applyImport") { e.target.disabled = true; await applyImport(); return; }
+  if (e.target.id === "driveSync") { await driveSync(); return; }
 });
 document.addEventListener("change", async e => {
-  const card = e.target.closest(".item[data-id]"); if (!card) return;
-  const it = ITEMS.find(x => x.id === card.dataset.id), act = e.target.dataset.act; if (!it || !act) return;
-  const cur = itemState(it);
-  const next = act === "stage" ? { ...cur, stage: e.target.value } : { ...cur, date: e.target.value || null };
-  await persist("pipeline", it.id, next); renderPipeline();
+  const card = e.target.closest(".item[data-id], .kcard[data-id]"); if (!card) return;
+  const it = allItems().find(x => x.id === card.dataset.id), act = e.target.dataset.act; if (!it || !act) return;
+  const cur = { ...(saved.pipeline[it.id] || {}), ...itemState(it) };
+  await persist("pipeline", it.id, act === "stage" ? { ...cur, stage: e.target.value } : { ...cur, date: e.target.value || null });
+  renderPipeline();
 });
+/* drag and drop between board columns */
+let dragId = null;
+document.addEventListener("dragstart", e => { const c = e.target.closest && e.target.closest(".kcard"); if (!c) return; dragId = c.dataset.id; try { e.dataTransfer.setData("text/plain", dragId); e.dataTransfer.effectAllowed = "move"; } catch (x) {} c.classList.add("dragging"); });
+document.addEventListener("dragend", e => { $$(".kcard.dragging").forEach(c => c.classList.remove("dragging")); $$(".col-body.over").forEach(c => c.classList.remove("over")); dragId = null; });
+document.addEventListener("dragover", e => { const b = e.target.closest && e.target.closest(".col-body"); if (!b || !dragId) return; e.preventDefault(); $$(".col-body.over").forEach(c => c !== b && c.classList.remove("over")); b.classList.add("over"); });
+document.addEventListener("drop", async e => { const b = e.target.closest && e.target.closest(".col-body"); if (!b || !dragId) return; e.preventDefault(); const id = dragId; dragId = null; await moveItem(id, b.dataset.drop); });
 
 /* ============================ COMMENTS ============================ */
 let cmFilter = "reply";
@@ -820,7 +1003,7 @@ function renderFunnel() {
     {nm:"YouTube",val:fmt(v30),sub:`views, last 30 days · ${fmt(likes)} likes and ${fmt(cms)} comments on the last ${vs.length} videos`,src:"Live via VidIQ",on:true},
     {nm:"Your website",val:"–",sub:"Squarespace visits, article views, waitlist page views",src:"Needs Google Analytics",on:false},
     {nm:"Kit",val:"–",sub:"New subscribers by form and landing page",src:"Needs Kit connection",on:false},
-    {nm:"ThriveCart",val:"–",sub:"Checkout views and orders for the course",src:"Needs ThriveCart connection",on:false},
+    (() => { const a = salesAgg(); return a ? {nm:"ThriveCart",val:String(a.n30),sub:`course orders, last 30 days · $${fmt(a.rev30)}. Checkout views are not in the sale emails.`,src:"Live from Gmail sale emails",on:true} : {nm:"ThriveCart",val:"–",sub:"Course orders and revenue from your sale emails",src:"Press Check Gmail for sales",on:false}; })(),
     {nm:"Waitlist",val:"–",sub:"Squarespace form sign-ups",src:"Needs a GA event on the thank-you page",on:false}
   ];
   $("#flow").innerHTML = steps.map(s => `<div class="fstep ${s.on ? "" : "off"}"><div class="nm">${s.nm}</div><div class="val">${s.val}</div><div class="src">${s.sub}</div><div style="margin-top:8px"><span class="pill ${s.on ? "good" : ""}">${s.src}</span></div></div>`).join("");
@@ -841,21 +1024,75 @@ function utm() {
 }
 ["utmVideo","utmBase","utmMed"].forEach(id => $("#" + id).addEventListener("change", utm));
 $("#utmCopy").addEventListener("click", () => copyText($("#utmOut").textContent, "Link copied"));
-$("#copyPrompt").addEventListener("click", () => copyText($("#chatPrompt").textContent, "Prompt copied"));
 
 /* ============================ SOURCES ============================ */
 function renderSources() {
   const rows = [
     ["YouTube data (views, likes, comments, subscribers)","Connected","good","Live through VidIQ. Press Refresh to update.","Done"],
-    ["Script queue","Connected","good","Read from your Drive \"To Film\" folder at build time. Stages and dates you set are saved on this page.","Done"],
-    ["VidIQ keyword and opportunity data","Partly","warn","Available through the same connector (keyword research, outliers, subscriber insights). Not on this page yet.","Small"],
-    ["Your two Claude chats","Not readable","crit","No connector can read project chats. Use the table prompt on this page and keep the calendar in Notion.","Small"],
-    ["Google Analytics (Squarespace traffic)","Not connected","crit","GA4 has a reporting API, but there is no GA connector on your account. Squarespace form sign-ups reach GA4 only through a thank-you page event or Google Tag Manager.","Medium"],
-    ["Kit (subscribers by form and landing page)","Not connected","crit","Kit has a v4 API with API keys and OAuth for subscribers, tags and forms. I did not find documented stats endpoints, so per-form counts may need to be tallied from subscriber lists.","Medium"],
-    ["ThriveCart (checkout views, orders)","Not connected","crit","Webhooks and API keys sit under Settings, API and Webhooks. Zapier offers purchase triggers. I found no documentation of checkout-page view counts, so views may have to come from GA4 or ThriveCart's own reports.","Medium"]
+    ["Script queue and board","Connected","good","Scripts come from your Drive \"To Film\" folder (press Pull new scripts from Drive). Columns and dates you set are saved on this page.","Done"],
+    ["ThriveCart course sales","Connected through Gmail","good","Reads the sale emails already in your inbox. It gives orders, revenue and dates. It cannot give checkout views or which video sent the buyer.","Done"],
+    ["Your Claude planning chat","Copy and paste","warn","No connector reads project chats. Use the two copy-paste buttons in Production.","Done"],
+    ["Kit (subscribers, forms, broadcasts)","Not connected","crit","Kit has an official Claude connector. Add it in claude.ai Settings, Connectors, then I can build the panel. Kit's API has account growth stats and broadcast stats. Per-form counts are not confirmed.","You: 2 minutes"],
+    ["Descript (filmed versus edited)","Not used","warn","The official Descript connector imports media, runs edits by prompt and checks job status. It cannot list your projects or say what is edited, so moving cards on the board is faster and more accurate.","None"],
+    ["Google Analytics (Squarespace traffic)","Not connected","crit","There is no Google Analytics connector on your account. Squarespace form sign-ups reach GA4 only through a thank-you page event or Google Tag Manager.","Later"],
+    ["VidIQ keyword and opportunity data","Partly","warn","Available through the same connector. Not on this page yet.","Small"]
   ];
   $("#srcTbl").innerHTML = `<thead><tr><th>Source</th><th>Status</th><th>What it takes</th><th>Effort</th></tr></thead><tbody>${rows.map(r => `<tr><td>${r[0]}</td><td><span class="pill ${r[2]}">${r[1]}</span></td><td class="muted">${r[3]}</td><td>${r[4]}</td></tr>`).join("")}</tbody>`;
 }
+
+/* ============================ COURSE SALES (Gmail sale emails) ============================ */
+const OWN = ["wes.white91@gmail.com", "weswhitecounseling@gmail.com", "wesley@mindbodycoopchicago.com"];
+let SALES = [];
+try { SALES = JSON.parse(localStorage.getItem("hq-sales") || "[]"); } catch (e) {}
+function parseSale(m) {
+  const b = String(m.plaintextBody || m.plaintext_body || m.snippet || ""), subj = String(m.subject || "");
+  const inv = (/Sale notification:\s*(\d+(?:-\d+)?)/.exec(subj) || [])[1]; if (!inv) return null;
+  const tot = /Total \(USD\)\s*\$([\d,]+(?:\.\d+)?)/.exec(b), prod = /Description\s*Amount\s*Total\s*(.+?)\s*(?:One-time payment|\d+\s+payments?|Subscription|\(\$)/i.exec(b);
+  const email = ((/Details of (\S+?)['’]s purchase/.exec(b) || [])[1] || "").toLowerCase();
+  return { inv, date: String(m.date || "").slice(0, 10), product: prod ? prod[1].trim() : "Course", amount: tot ? parseFloat(tot[1].replace(/,/g, "")) : null, test: OWN.includes(email) || /Billing info\s*Wes\s*test/i.test(b) };
+}
+const saleHidden = x => x.test || (saved.sales[x.inv] && saved.sales[x.inv].hidden);
+function salesAgg() {
+  let at = null; try { at = localStorage.getItem("hq-sales-at"); } catch (e) {}
+  if (!SALES.length && !at) return null;
+  const live = SALES.filter(x => !saleHidden(x)), cut = addDays(today(), -30);
+  const r = live.filter(x => x.date >= cut);
+  return { n: live.length, n30: r.length, rev30: r.reduce((s, x) => s + (x.amount || 0), 0), live };
+}
+function renderSales() {
+  const a = salesAgg(), el = $("#salesOut"); if (!el) return;
+  if (!a) { el.innerHTML = `<div class="card muted" style="background:var(--bg)">No sales loaded yet. Press "Check Gmail for sales". Google asks you to allow this page to read your Gmail the first time. The page only searches for ThriveCart sale emails.</div>`; return; }
+  const hidden = SALES.length - a.live.length;
+  el.innerHTML = `<div class="grid g4" style="margin-bottom:12px">
+      <div class="card kpi"><div class="eyebrow">Orders, last 30 days</div><div class="num">${a.n30}</div></div>
+      <div class="card kpi"><div class="eyebrow">Revenue, last 30 days</div><div class="num">$${fmt(a.rev30)}</div></div>
+      <div class="card kpi"><div class="eyebrow">Orders in the last 120 days</div><div class="num">${a.n}</div><div class="sub">${hidden} hidden as tests</div></div></div>
+    <div class="tblwrap"><table><thead><tr><th>Date</th><th>Product</th><th class="r">Amount</th><th>Invoice</th><th></th></tr></thead><tbody>${[...SALES].sort((x, y) => y.date.localeCompare(x.date)).slice(0, 20).map(x => `<tr style="${saleHidden(x) ? "opacity:.5" : ""}"><td class="mono">${short(x.date)}</td><td>${esc(x.product)}${x.test ? ` <span class="pill">Test</span>` : ""}</td><td class="r mono">${x.amount == null ? "–" : "$" + x.amount.toFixed(2)}</td><td class="mono">${esc(x.inv)}</td><td>${x.test ? "" : `<button class="btn small" type="button" data-hide="${esc(x.inv)}">${saleHidden(x) ? "Show" : "Hide"}</button>`}</td></tr>`).join("")}</tbody></table></div>
+    <p class="muted" style="font-size:12.5px;margin-top:8px">Sale emails do not say which video sent the buyer. Compare order dates with your upload dates, and give the course link a UTM tag from the box below.</p>`;
+}
+async function loadSales() {
+  const btn = $("#salesBtn"); btn.disabled = true; btn.textContent = "Checking Gmail…";
+  const mcp = await use("mcp");
+  if (!mcp) { toast("Gmail reading isn't available in this view"); btn.disabled = false; btn.textContent = "Check Gmail for sales"; return; }
+  try {
+    const r = await mcp.callTool("Gmail", "search_threads", { query: 'from:receipts@thrivecart.email subject:"Sale notification" newer_than:120d', pageSize: 40, view: "THREAD_VIEW_MINIMAL" });
+    const threads = ((asObj(r) || {}).threads) || [], out = [];
+    for (let i = 0; i < threads.length; i += 4) {
+      const got = await Promise.allSettled(threads.slice(i, i + 4).map(t => mcp.callTool("Gmail", "get_thread", { threadId: t.id, messageFormat: "PLAIN_TEXT" })));
+      got.forEach(g => { if (g.status === "fulfilled") { const o = asObj(g.value); ((o && o.messages) || []).forEach(m => { const s = parseSale(m); if (s) out.push(s); }); } });
+    }
+    SALES = out;
+    try { localStorage.setItem("hq-sales", JSON.stringify(out)); localStorage.setItem("hq-sales-at", String(Date.now())); } catch (e) {}
+    toast(`Found ${out.length} sale email${out.length === 1 ? "" : "s"}`);
+  } catch (e) {
+    toast(({ needs_reauth: "Reconnect Gmail in claude.ai Settings, Connectors.", not_in_manifest: "Gmail access was declined for this page.", server_not_connected: "Add Gmail in claude.ai Settings, Connectors." })[e.code] || "Couldn't read Gmail. Try again in a minute.");
+  }
+  btn.disabled = false; btn.textContent = "Check Gmail for sales"; renderSales(); renderFunnel();
+}
+document.addEventListener("click", async e => {
+  if (e.target.id === "salesBtn") { loadSales(); return; }
+  const h = e.target.closest("[data-hide]"); if (h) { const inv = h.dataset.hide; await persist("sales", inv, { hidden: !(saved.sales[inv] && saved.sales[inv].hidden) }); renderSales(); renderFunnel(); }
+});
 
 /* ============================ LIVE REFRESH (VidIQ) ============================ */
 function decodeHtml(h) { const s = String(h || "").replace(/<br\s*\/?>/gi, "\n"); return new DOMParser().parseFromString(s, "text/html").body.textContent || ""; }
@@ -918,7 +1155,7 @@ function showTab(k) {
 $$(".tab").forEach(b => b.addEventListener("click", () => { try { history.replaceState(null, "", "#" + b.dataset.tab); } catch (e) {} showTab(b.dataset.tab); }));
 addEventListener("hashchange", () => showTab(location.hash.slice(1)));
 
-function renderAll() { renderKpis(); renderCharts(); renderVideos(); renderInsights(); renderPipeline(); renderComments(); renderFunnel(); renderSources(); }
+function renderAll() { renderKpis(); renderCharts(); renderVideos(); renderInsights(); renderPipeline(); renderComments(); renderFunnel(); renderSales(); renderSources(); }
 lsLoad();
 renderAll();
 showTab(location.hash.slice(1));
