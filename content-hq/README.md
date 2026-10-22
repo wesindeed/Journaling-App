@@ -16,3 +16,6 @@ Single-file dashboard for the Wes White Counseling YouTube channel and content b
 - Website card reads a Google Sheet filled by `ga4-to-sheets.gs` (Google Apps Script, free). The script has not been run against a real GA4 property.
 
 Not yet set up: Google Analytics sheet, Search Console. See the Data sources tab.
+
+- Weekly email tab: pick a Monday or Friday send day. It recaps the two most recent videos, teases the next one, adds your own color, and creates a Kit broadcast draft (Classic "Text only" template). Never schedules or sends. Scripts are read from the Drive To Film and Filmed folders.
+- Board seed: the production calendar V01-V19 comes from the planning chat's production state as of Oct 22, 2026, including edit-by, film-by and script-by deadlines.

@@ -246,6 +246,7 @@ td.mono, th.r, td.r { text-align: right; }
         <button class="tab" role="tab" data-tab="pipeline" aria-selected="false">Production <span class="count" id="cPipe">0</span></button>
         <button class="tab" role="tab" data-tab="comments" aria-selected="false">Comments <span class="count alert" id="cCom">0</span></button>
         <button class="tab" role="tab" data-tab="waitlist" aria-selected="false">Waitlist <span class="count" id="cWait">0</span></button>
+        <button class="tab" role="tab" data-tab="email" aria-selected="false">Weekly email <span class="count" id="cEm"></span></button>
         <button class="tab" role="tab" data-tab="funnel" aria-selected="false">Funnel</button>
         <button class="tab" role="tab" data-tab="sources" aria-selected="false">Data sources</button>
       </nav>
@@ -345,6 +346,33 @@ td.mono, th.r, td.r { text-align: right; }
       <div class="chips" id="wlFilters"></div>
       <div id="wlList" class="list"></div>
       <p class="muted" style="font-size:12.5px">Request details are read on demand and are not saved by this page. Only your replied and skipped marks are saved.</p>
+    </section>
+
+    <!-- WEEKLY EMAIL -->
+    <section class="panel stack" id="p-email" role="tabpanel" hidden>
+      <div>
+        <div class="sec-head"><div><h2>Weekly email</h2><p id="emStatus"></p></div></div>
+        <div class="card" style="display:grid;gap:16px">
+          <div class="row" style="display:flex;gap:10px;flex-wrap:wrap;align-items:end">
+            <div class="field" style="flex:0 1 190px"><label class="eyebrow" for="emDate">Send day</label><input id="emDate" type="date"></div>
+            <div class="chips" id="emQuick"></div>
+          </div>
+          <div id="emVideos" class="list"></div>
+          <div class="field"><label class="eyebrow" for="emColor">Your color: one thing you didn't have room for in the videos (optional)</label><textarea id="emColor" rows="3" style="background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px;width:100%" placeholder="A thought, a pattern you see in your sessions, or a question people keep asking. One to three lines. Real details only."></textarea></div>
+          <div class="row" style="display:flex;gap:10px;flex-wrap:wrap;align-items:end">
+            <div class="field" style="flex:1 1 280px"><label class="eyebrow" for="emLm">Free guide to feature in the P.S.</label><select id="emLm"></select></div>
+            <label style="display:flex;gap:6px;align-items:center;font-size:13.5px"><input id="emPs" type="checkbox" checked> Add my standard P.S. (waitlist and coaching links)</label>
+          </div>
+          <div class="row" style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="emLoad" type="button">Load scripts from Drive</button><button class="btn primary" id="emDraft" type="button">Draft the email with Claude</button><span class="muted" style="font-size:12.5px;align-self:center" id="emMsg"></span></div>
+        </div>
+      </div>
+      <div class="card" id="emOut" style="display:grid;gap:12px" hidden>
+        <div class="field"><label class="eyebrow" for="emSubject">Subject</label><input id="emSubject" type="text"><div class="muted" style="font-size:12.5px" id="emAlts"></div></div>
+        <div class="field"><label class="eyebrow" for="emPreview">Preview text</label><input id="emPreview" type="text"></div>
+        <div class="field"><label class="eyebrow" for="emBody">Email</label><textarea id="emBody" rows="18" style="background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px;line-height:1.5"></textarea></div>
+        <div class="row" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><button class="btn primary" id="emKit" type="button">Create draft in Kit</button><button class="btn" id="emCopy" type="button">Copy email</button><span class="muted" style="font-size:12.5px" id="emKitMsg"></span></div>
+        <p class="muted" style="font-size:12.5px">The Kit draft goes to all subscribers by default. Nothing is scheduled or sent from here. Open it in Kit, check the rendered email, then schedule it yourself.</p>
+      </div>
     </section>
 
     <!-- FUNNEL -->
@@ -473,21 +501,31 @@ const STAGES = [
 ];
 const DRIVE = id => "https://docs.google.com/document/d/" + id + "/edit";
 const ITEMS = [
-  {id:"s-four-stages",stage:"filmed",title:"Surviving Infidelity: The 4 Stages Every Betrayed Partner Goes Through",fmt:"long",len:"12–14 min",drafted:"2026-08-31",doc:"1-CAhp3yuON8eqnQ3P3bZ7fnHVcu5XxnBMgi9Vfi8Ye8",prio:1,note:"Targets \"surviving infidelity\" (29,811 searches a month, per the script). Highest search volume in the queue, drafted 52 days ago."},
-  {id:"s-help-partner",stage:"filmed",title:"How to Help Your Partner Heal After Infidelity (What They're Actually Going Through)",fmt:"long",len:"12–14 min",drafted:"2026-10-20",doc:"1XhOri6PG0Vxex5gG3q290941YjWIi4HczFcd3tZobD0",prio:2,note:"Speaks to the partner who cheated. Three recent commenters are in exactly that spot."},
-  {id:"s-holidays",stage:"filmed",title:"Surviving the Holidays After Betrayal",fmt:"long",len:"13–15 min",drafted:"2026-10-20",doc:"1tN5uHKc20XNfcP4f3Vt7cJjUj3F5hP0iGrOzoDQeY5I",prio:0,dueBy:"2026-11-12",note:"Seasonal. Thanksgiving is Nov 26, so aim to publish by about Nov 12."},
-  {id:"s-affair-partner",stage:"filmed",title:"Why the Affair Partner Seemed So Different (And What It Actually Means About Your Marriage)",fmt:"long",len:"11–13 min",drafted:"2026-10-20",doc:"1w4fb8CxSiBlhBuQEW2fWHKcmhukrzMH_XFVejdg4ric",prio:3,note:"Mid-video: 5 Hidden Mistakes. End: course."},
-  {id:"s-healing-signs",title:"Healing from Infidelity: Signs You're Actually Getting Better",fmt:"long",len:"9–11 min",drafted:"2026-10-20",doc:"1SEAhrNlG_VKzrjQ4ycbDjg-KfDb4duuVovrRULeQP1Y",prio:4,note:"Points back to your 4 Stages video, so film that one first."},
-  {id:"s-porn",stage:"filmed",title:"Why His Porn Use Feels Like an Affair (Because Your Brain Says It Is)",fmt:"long",len:"20–25 min",drafted:"2026-10-14",doc:"1pR2pVJna4Sez0g2PX8EJscA7EQdKr7JBonICpl--quk",prio:5,note:"Cornerstone for the porn short dated Nov 10. Long videos of 20+ minutes are your top two so far."},
-  {id:"s-mind",title:"You're Not Losing Your Mind. You're Experiencing Betrayal Trauma.",fmt:"long",len:"11–14 min",drafted:"2026-07-06",doc:"1R2iyuXho_oHUDXOS-DDvUSXCu-UjSrp-bNpyPd2WDCo",prio:6,note:"Drafted Jul 6 and still unfilmed."},
-  {id:"s-last",title:"Do Affair Relationships Actually Last? What Research Shows",fmt:"long",len:"14–17 min",drafted:"2026-09-10",doc:"1N-IBjvGmEl20c_mrs7GbyPhrEl8EEkavbI129Dxdd7s",prio:7,note:"Its keyword (why people cheat, 15,314 a month) is the one your 9,690-view video already ranks for. Retitle or angle it differently."},
-  {id:"s-nothing",title:"\"It Has Nothing to Do With You\": Why Porn Betrayal Feels So Personal",fmt:"short",len:"5–6 min",drafted:"2026-10-14",doc:"1s9dhS3E1f5Llh0fetNihrmNohWPsMWPP-IDXKZTdOLw",date:"2026-11-10",note:"Script says it posts Nov 10 and pairs with the porn cornerstone."},
-  {id:"s-family",stage:"filmed",title:"What to Say When Family Asks About the Affair at the Holidays",fmt:"short",len:"5–6 min",drafted:"2026-10-20",doc:"1Rfp5Thm9oth8fI_FIYBaml73-A7K_q88Wye9R3TWlHY",date:"2026-11-17",note:"Script says it posts Nov 17."},
-  {id:"s-dday",stage:"filmed",title:"What to Do the Week Before a D-Day Anniversary",fmt:"short",len:"5–6 min",drafted:"2026-10-14",doc:"1bgN5-ZFWTj1VYPaWeuR9GkVo7qWlnNmxokt2mdzWI4M",date:"2026-11-24",note:"Script says it posts Nov 24."},
-  {id:"s-forgive",stage:"filmed",title:"Is It Forgiveness or Is It Giving Up? How to Tell the Difference",fmt:"short",len:"5–6 min",drafted:"2026-10-14",doc:"1oEo36xUaUv5a-szb0JCJ1_2xC-iV3_1TxKqtjn3yS0A",date:"2026-12-15",note:"Script says it posts Dec 15."},
-  {id:"s-grief",stage:"filmed",title:"How to Cope With Being Cheated On: The Grief Nobody Talks About",fmt:"short",len:"5–6 min",drafted:"2026-10-14",doc:"1mmNZu7FMgr8mqCz4I4k3RbDOPpRszbx21VxErwJa7gY",date:"2026-12-22",note:"Script says it posts Dec 22."},
-  {id:"s-signs",stage:"filmed",title:"3 Signs Your Partner Is Actually Doing the Work After an Affair",fmt:"short",len:"5–6 min",drafted:"2026-09-10",doc:"1AfK__RIe__RvpH0kqxDvGGS28tg_10UwJpNpxvfTRbs",note:"Drafted Sep 10, no date. Good filler for a short slot."}
+  {id:"s-help-partner",v:"V01",title:"How to Help Your Partner Heal After Infidelity (What They're Actually Feeling)",alt:["How to Help Your Partner Heal After Infidelity (What They're Actually Going Through)"],fmt:"long",len:"12–14 min",drafted:"2026-10-20",doc:"1XhOri6PG0Vxex5gG3q290941YjWIi4HczFcd3tZobD0",date:"2026-10-27",stage:"filmed",editBy:"2026-10-24",lm:"cheated",note:"Best search demand in the queue: about 7.8K a month, competition 25. \"Help your spouse heal from your affair\" is about 5K. Links: Trust Part 4 (presence), Part 6 and Part 3 (confirm which covers months 3-6)."},
+  {id:"s-forgive",v:"V02",title:"Is It Forgiveness or Is It Giving Up?",alt:["Is It Forgiveness or Is It Giving Up? How to Tell the Difference"],fmt:"short",len:"5–7 min",drafted:"2026-10-14",doc:"1oEo36xUaUv5a-szb0JCJ1_2xC-iV3_1TxKqtjn3yS0A",date:"2026-10-30",stage:"filmed",editBy:"2026-10-27",lm:"shouldistay",note:"Spring's cheap versus genuine forgiveness."},
+  {id:"s-holidays",v:"V03",title:"Surviving the Holidays After Betrayal",fmt:"long",len:"13–15 min",drafted:"2026-10-20",doc:"1tN5uHKc20XNfcP4f3Vt7cJjUj3F5hP0iGrOzoDQeY5I",date:"2026-11-03",stage:"filmed",editBy:"2026-10-31",lm:"first30",note:"Seasonal. Must post before Thanksgiving (Nov 26)."},
+  {id:"s-family",v:"V04",title:"What to Say When Family Asks About the Affair at the Holidays",fmt:"short",len:"5–7 min",drafted:"2026-10-20",doc:"1Rfp5Thm9oth8fI_FIYBaml73-A7K_q88Wye9R3TWlHY",date:"2026-11-06",stage:"filmed",editBy:"2026-11-03",note:"Seasonal. Pairs with V03."},
+  {id:"s-porn",v:"V05",title:"Why His Porn Use Feels Like an Affair (Because Your Brain Says It Is)",fmt:"long",len:"20–25 min",drafted:"2026-10-14",doc:"1pR2pVJna4Sez0g2PX8EJscA7EQdKr7JBonICpl--quk",date:"2026-11-10",stage:"filmed",editBy:"2026-11-07",lm:"mistakes",note:"Trimmed to avoid overlap with the sexting video. End: If You're the One Who Cheated, plus the course."},
+  {id:"s-dday",v:"V06",title:"What to Do the Week Before a D-Day Anniversary",fmt:"short",len:"5–7 min",drafted:"2026-10-14",doc:"1bgN5-ZFWTj1VYPaWeuR9GkVo7qWlnNmxokt2mdzWI4M",date:"2026-11-13",stage:"filmed",editBy:"2026-11-10",note:"Posts before V07 on purpose."},
+  {id:"v07",v:"V07",title:"When a D-Day Anniversary Hits: How to Get Through It",fmt:"long",len:"10–25 min",drafted:null,doc:null,date:"2026-11-17",stage:"filmed",editBy:"2026-11-14",lm:"mistakes",note:"Anniversary-reaction research: Pollock 1970, National Center for PTSD."},
+  {id:"v08",v:"V08",title:"Can You Trust Your Own Gut After Betrayal?",fmt:"short",len:"5–7 min",drafted:"2026-10-22",doc:null,date:"2026-11-20",stage:"scripted",filmBy:"2026-11-13",lm:"mistakes",note:"Self-trust angle (Freyd's betrayal blindness is a clinical extension). Optional 60-second insert on the forced choice between your gut and their story (Minwalla framework, label it as a clinical framework)."},
+  {id:"v09",v:"V09",title:"How to Heal After Being Cheated On (Even If You're Not Staying)",fmt:"long",len:"10–25 min",drafted:null,doc:null,date:"2026-11-24",stage:"filmed",editBy:"2026-11-21",lm:"course",note:"About 5K a month, competition 35. Recommended reading: Secure Relating (Marriott and Kelly). End: Should I Stay."},
+  {id:"s-grief",v:"V10",title:"How to Cope With Being Cheated On: The Grief Nobody Talks About",alt:["SHORT The Grief Nobody Talks About After an Affair"],fmt:"short",len:"5–7 min",drafted:"2026-10-14",doc:"1mmNZu7FMgr8mqCz4I4k3RbDOPpRszbx21VxErwJa7gY",date:"2026-11-27",stage:"filmed",editBy:"2026-11-24",lm:"course",note:"About 5.3K a month, competition 24. The day after Thanksgiving is low traffic, so consider Wed Nov 25."},
+  {id:"s-affair-partner",v:"V11",title:"Why Do I Compare Myself to the Woman My Partner Cheated With?",alt:["Why the Affair Partner Seemed So Different (And What It Actually Means About Your Marriage)"],fmt:"long",len:"11–13 min",drafted:"2026-10-20",doc:"1w4fb8CxSiBlhBuQEW2fWHKcmhukrzMH_XFVejdg4ric",date:"2026-12-01",stage:"filmed",editBy:"2026-11-28",lm:"mistakes",note:"About 4.9K a month, competition 39. The video is gender-neutral, so keep thumbnail text neutral. Tennov's limerence work is observational."},
+  {id:"v12",v:"V12",title:"What to Do When You're Triggered in Public",fmt:"short",len:"5–7 min",drafted:null,doc:null,date:"2026-12-04",stage:"scripted",filmBy:"2026-11-27",note:"LeDoux, affect labeling, grounding."},
+  {id:"v13",v:"V13",title:"How to Stop Obsessing Over the Affair Partner",fmt:"long",len:"10–25 min",drafted:null,doc:null,date:"2026-12-08",stage:"filmed",editBy:"2026-12-05",lm:"course",note:"Wegner's ironic process, ACT defusion, Spring's deconstruction. Confirm the course link was inserted."},
+  {id:"v14",v:"V14",title:"Should You Tell Your Kids About the Affair? What to Say at Every Age",fmt:"short",len:"5–7 min",drafted:"2026-10-22",doc:null,date:"2026-12-11",stage:"scripted",filmBy:"2026-12-04",lm:"first30",note:"Cummings and Davies; Grych and Fincham (Moderate). The age scripts are clinical consensus. No affair-specific statistics quoted."},
+  {id:"s-healing-signs",v:"V15",title:"How to Heal From an Affair: Signs You're Actually Getting Better",alt:["Healing from Infidelity: Signs You're Actually Getting Better (Even When It Doesn't Feel Like It)"],fmt:"long",len:"10–25 min",drafted:"2026-10-20",doc:"1SEAhrNlG_VKzrjQ4ycbDjg-KfDb4duuVovrRULeQP1Y",date:"2026-12-15",stage:"scripted",filmBy:"2026-12-08",lm:"mistakes",note:"About 5K a month, competition 29-33. Rebuilt with unsourced stats removed. Siegel's window of tolerance is a clinical framework."},
+  {id:"v16",v:"V16",title:"TBD from backlog (candidate: Should You Tell Your Partner You Cheated?)",fmt:"short",len:"5–7 min",drafted:null,doc:null,date:"2026-12-18",stage:"planned",scriptBy:"2026-12-04",lm:"cheated",note:"Candidate topic is about 3.7K a month, competition 35."},
+  {id:"v17",v:"V17",title:"What Your Affair Type Says About Your Recovery",fmt:"long",len:"10–25 min",drafted:null,doc:null,date:"2026-12-22",stage:"scripted",filmBy:"2026-12-15",lm:"shouldistay",note:"Trimmed: types 1-3 in depth, types 4-6 point to the 5 Profiles video. Swappable for Hysterical Bonding."},
+  {id:"v18",v:"V18",title:"Starting the New Year After Betrayal: What to Do (and What to Skip)",fmt:"short",len:"5–7 min",drafted:"2026-10-22",doc:null,date:"2026-12-29",stage:"scripted",filmBy:"2026-12-18",lm:"shouldistay",note:"Hook: skip \"decide by June\". Set a review date, not a verdict date. Dec 25 is no post or a pre-scheduled evergreen short."},
+  {id:"v19",v:"V19",title:"How to Move Forward After Infidelity (When You've Decided to Stay)",fmt:"long",len:"10–25 min",drafted:null,doc:null,date:"2027-01-05",stage:"planned",note:"Outline done. Waiting on your 4 answers. The script-by date was cut off in the paste."},
+  {id:"s-four-stages",title:"4 Stages of Surviving Infidelity",alt:["Four Stages of Infidelity Recovery","Surviving Infidelity: The 4 Stages Every Betrayed Partner Goes Through"],fmt:"long",len:"12–14 min",drafted:"2026-08-31",doc:"1-CAhp3yuON8eqnQ3P3bZ7fnHVcu5XxnBMgi9Vfi8Ye8",stage:"filmed",note:"Your chat lists this as posted, but no matching video is on the channel. It sits in Descript's To Edit folder, so it looks filmed and not yet edited. Confirm, then give it a date. Targets \"surviving infidelity\" (29,811 searches a month per the script)."},
+  {id:"s-signs",title:"3 Signs Your Partner Is Actually Doing the Work After an Affair",fmt:"short",len:"5–6 min",drafted:"2026-09-10",doc:"1AfK__RIe__RvpH0kqxDvGGS28tg_10UwJpNpxvfTRbs",stage:"filmed",note:"Your chat lists this as posted, but the channel search found only a different 2025 short with a similar title. It sits in Descript's To Edit folder. Confirm, then give it a date."},
+  {id:"s-nothing",title:"\"It Has Nothing to Do With You\": Why Porn Betrayal Feels So Personal",fmt:"short",len:"5–6 min",drafted:"2026-10-14",doc:"1s9dhS3E1f5Llh0fetNihrmNohWPsMWPP-IDXKZTdOLw",stage:"scripted",note:"Not on your chat's calendar. Shelve it or schedule it."},
+  {id:"s-mind",title:"You're Not Losing Your Mind. You're Experiencing Betrayal Trauma.",fmt:"long",len:"11–14 min",drafted:"2026-07-06",doc:"1R2iyuXho_oHUDXOS-DDvUSXCu-UjSrp-bNpyPd2WDCo",stage:"scripted",note:"Drafted Jul 6. Not on your chat's calendar. Shelve it or schedule it."}
 ];
+const LM_KEYS = { first30: LINKS.first30, shouldistay: LINKS.shouldistay, mistakes: LINKS.mistakes, course: LINKS.course, cheated: { label: "If You're the One Who Cheated: What Actually Helps", url: "" } };
 const DEFAULT_STAGE = "scripted";
 
 /* Triage: reply = needs a real answer, care = handle gently, thanks = quick acknowledgement, skip = leave or moderate. */
@@ -744,7 +782,9 @@ function renderInsights() {
     {p:"High", cls:"crit", h:"Make your two biggest videos work harder", b:`${esc(top2[0].title)} (${fmt(top2[0].views)} views) and ${esc(top2[1].title)} (${fmt(top2[1].views)}) account for ${(top2s / tot * 100).toFixed(0)}% of views across your last ${vs.length} public videos. Their pinned comments predate the 50 threads pulled here, so it is unconfirmed whether they carry a Kit guide or the course link.`, act:`<b>Do this:</b> open both videos and check the description and pinned comment for the First 30 Days guide and the course. These two carry the most evergreen traffic.`, ev:"Source: VidIQ video stats, Oct 22"},
     {p:"Test", cls:"warn", h:"Longer videos are leading, but only two data points", b:`Your two top performers run ${top2.map(v => v.min.toFixed(0)).join(" and ")} minutes. The 7 and 10 minute videos trail (${fmt(vs.find(v => v.id === "0sMx6by0NUE").views)} and ${fmt(vs.find(v => v.id === "Mg8IWEGUlrc").views)}), but the 8-minute "affair is really over" video sits at ${fmt(vs.find(v => v.id === "y6vDruqmMCQ").views)}, so topic is likely doing as much as length.`, act:`<b>Do this:</b> film your 20-25 minute porn video next to the 5-6 minute shorts and compare views per day at day 14.`, ev:"Pattern across 11 videos. Treat as a hypothesis."},
     {p:"Funnel", cls:"acc", h:"Course-topic videos draw a smaller audience than your other uploads", b:`The two intrusive-thoughts videos average ${fmt(avg(course))} views against ${fmt(avg(others))} for the other ${others.length} videos older than a week. The people most likely to buy are probably already watching your remorse and apology videos.`, act:`<b>Do this:</b> move the course call-to-action into the high-traffic videos, and use the intrusive-thoughts videos as the second step.`, ev:"Hypothesis. The Funnel tab fills in once ThriveCart is connected."},
-    {p:"Queue", cls:"warn", h:`${stale} long scripts have no publish date`, b:`The highest-volume script in the queue, "Surviving Infidelity: The 4 Stages" (29,811 searches a month per your script), was drafted Aug 31 and is not dated. The holiday video needs to publish by about Nov 12 to meet Thanksgiving.`, act:`<b>Do this:</b> open Production, switch to Calendar, and use "Suggest a schedule".`, ev:"Source: Google Drive To Film folder"},
+    (() => { const t = today(), due = []; allItems().forEach(it => { const st = itemState(it); unmet(it, st).forEach(u => { const d = daysBetween(t, u.by); if (d <= 7) due.push({ it, u, d }); }); }); due.sort((a, b) => a.d - b.d);
+      return { p: due.some(x => x.d < 0) ? "Overdue" : "Queue", cls: due.some(x => x.d < 0) ? "crit" : "warn", h: due.length ? `${due.length} production deadline${due.length === 1 ? "" : "s"} in the next 7 days` : "No edit, film or script deadlines in the next 7 days", b: due.length ? due.slice(0, 5).map(x => `${x.u.label} "${x.it.title}" by ${short(x.u.by)}${x.d < 0 ? " (overdue)" : ""}`).join(". ") + "." : "Your queue is ahead of its deadlines.", act: `<b>Do this:</b> open Production. Cards show their deadline in a pill.`, ev: "Source: your chat's production schedule" }; })(),
+    (() => { const last = (KIT.broadcasts || []).map(b => b.date).sort().pop(), ago = last ? daysBetween(last, today()) : null; return { p: "Email", cls: ago > 7 ? "warn" : "acc", h: ago == null ? "Weekly email" : `Your last email went out ${ago} days ago`, b: ago == null ? "Draft this week's email from the Weekly email tab." : `Last broadcast: ${short(last)}. In September you were sending close to weekly. Each send brings subscribers back to a video, and your teaching-style email had the best click rate.`, act: `<b>Do this:</b> open Weekly email, pick Monday or Friday, and draft it in about two minutes.`, ev: "Source: Kit broadcasts" }; })(),
     {p:"Replies", cls:"warn", h:`${unrep} comments are waiting for an answer`, b:`Most are from people in the first weeks after discovery, asking a direct question. Drafts are written for each, in your tone from your past replies.`, act:`<b>Do this:</b> open Comments and clear the "Reply" group first. About 20 minutes.`, ev:"Source: VidIQ, 50 most recent threads, Oct 8 to Oct 22"},
     {p:"Kit", cls:"acc", h:"Your teaching emails out-click your promo emails", b:`"Is this who they really are?" got a ${KIT.broadcasts.find(b => b.id === 26287143)?.click.toFixed(1) ?? "9.6"}% click rate. The three course-promo sends ("Here's what is actually inside", "Last few days at $147", "Closes at midnight") ran 1.9% to 2.9%. Open rates were similar, around 31% to 36%, so the subject lines work and the body is what changes the click.`, act:`<b>Do this:</b> write the next course email in the same shape as the 9.6% one: a story first, the course second.`, ev:"Source: Kit broadcast stats. Six sends, so treat it as a lead."},
     {p:"Kit", cls:"acc", h:`One landing page carries the list: ${KIT.forms.slice().sort((a, b) => b.count - a.count)[0].name}`, b:`It holds ${KIT.forms.slice().sort((a, b) => b.count - a.count)[0].count} of your ${KIT.growth.total} subscribers. The two newer guides ("5 Hidden Mistakes", "Should I Stay?") launched Oct 19 and Oct 21 and have ${KIT.forms.find(f => f.id === 10067126)?.count ?? 0} and ${KIT.forms.find(f => f.id === 10078667)?.count ?? 0} signups so far. Too early to judge.`, act:`<b>Do this:</b> use the UTM link builder on the Funnel tab for each new pinned comment, so Kit can show which video sent each signup.`, ev:"Source: Kit forms. Checked Oct 22."},
@@ -765,25 +805,32 @@ function customItems() {
 const allItems = () => ITEMS.concat(customItems());
 const byDate = (a, b) => { const da = itemState(a).date, db = itemState(b).date; if (da && db) return da.localeCompare(db); if (da) return -1; if (db) return 1; return (a.prio ?? 99) - (b.prio ?? 99); };
 const pipeFilt = it => pipeFilter === "all" || it.fmt === pipeFilter;
-function risk(st) {
-  if (!st.date || st.stage === "published") return null;
-  const d = daysBetween(today(), st.date), si = stageIdx(st.stage);
+function unmet(it, st) {
+  return [["ready", it.editBy, "Edit"], ["filmed", it.filmBy, "Film"], ["scripted", it.scriptBy, "Script"]].filter(d => d[1] && stageIdx(st.stage) < stageIdx(d[0])).map(d => ({ label: d[2], by: d[1] }));
+}
+function risk(st, it) {
+  if (st.stage === "published") return null;
+  const t = today(), u = unmet(it, st)[0];
+  if (u) { const d = daysBetween(t, u.by); return d < 0 ? { cls: "crit", t: `${u.label} overdue, was due ${short(u.by)}` } : { cls: d <= 3 ? "warn" : "", t: `${u.label} by ${short(u.by)}` }; }
+  if (!st.date) return null;
+  const d = daysBetween(t, st.date), si = stageIdx(st.stage);
   if (d < 0) return { cls: "crit", t: `${-d} day${d === -1 ? "" : "s"} past publish date` };
-  const need = d <= 3 ? 4 : d <= 7 ? 3 : d <= 14 ? 2 : 0;
+  const explicit = it.editBy || it.filmBy || it.scriptBy;
+  const need = explicit ? (d <= 3 ? 4 : 0) : (d <= 3 ? 4 : d <= 7 ? 3 : d <= 14 ? 2 : 0);
   if (si >= need) return null;
   return { cls: (need - si >= 2 || d <= 3) ? "crit" : "warn", t: `Due in ${d} day${d === 1 ? "" : "s"}, still ${stageLabel(st.stage).toLowerCase()}` };
 }
 const scriptHref = it => it.doc ? DRIVE(it.doc) : it.link;
 function kcard(it) {
-  const st = itemState(it), r = risk(st), si = stageIdx(st.stage), href = scriptHref(it);
+  const st = itemState(it), r = risk(st, it), si = stageIdx(st.stage), href = scriptHref(it);
   return `<div class="kcard" draggable="true" data-id="${esc(it.id)}">
-    <div class="kt">${esc(it.title)}</div>
+    <div class="kt">${it.v ? `<span class="mono muted" style="font-size:11px">${it.v}</span> ` : ""}${esc(it.title)}</div>
     <div class="chips"><span class="pill ${it.fmt === "long" ? "acc" : ""}">${it.fmt === "long" ? "Long" : "Short"}${it.len ? " · " + esc(it.len) : ""}</span>${it.dueBy ? `<span class="pill warn">Publish by ${short(it.dueBy)}</span>` : ""}${st.descript ? `<span class="pill">In Descript</span>` : ""}${r ? `<span class="pill ${r.cls}">${esc(r.t)}</span>` : ""}</div>
     ${it.note ? `<details><summary>Notes</summary><p class="note">${esc(it.note)}</p></details>` : ""}
     <div class="kctl"><button class="btn small" type="button" data-mv="-1" ${si <= 0 ? "disabled" : ""} aria-label="Move back one column" title="Move back">‹</button><input type="date" data-act="date" value="${st.date || ""}" aria-label="Publish date"><button class="btn small" type="button" data-mv="1" ${si >= STAGES.length - 1 ? "disabled" : ""} aria-label="Move forward one column" title="${st.stage === "scheduled" ? "Mark published" : "Move forward"}">›</button>${href ? `<a class="small-link" href="${esc(href)}" target="_blank" rel="noopener">Script</a>` : ""}</div></div>`;
 }
 function itemCard(it) {
-  const st = itemState(it), si = stageIdx(st.stage), r = risk(st), href = scriptHref(it);
+  const st = itemState(it), si = stageIdx(st.stage), r = risk(st, it), href = scriptHref(it);
   return `<div class="item" data-id="${esc(it.id)}">
     <div class="top1"><div class="ttl">${esc(it.title)}</div><div class="chips"><span class="pill ${it.fmt === "long" ? "acc" : ""}">${it.fmt === "long" ? "Long" : "Short"}${it.len ? " · " + esc(it.len) : ""}</span>${it.dueBy ? `<span class="pill warn">Publish by ${short(it.dueBy)}</span>` : ""}${r ? `<span class="pill ${r.cls}">${esc(r.t)}</span>` : ""}</div></div>
     ${it.note ? `<div class="note">${esc(it.note)}</div>` : ""}
@@ -881,16 +928,14 @@ const normTitle = s => String(s).toLowerCase().replace(/\*\*/g, "").replace(/^\W
 const cleanTitle = s => String(s).replace(/\*\*/g, "").replace(/^\s*(SHORT|LONG)\s*[-—:]*\s*/i, "").replace(/^["“]+|["”]+$/g, "").trim();
 const STOP = new Set("the and for you your are with that this from have what how why who when about after into over not but can its they them their there than then".split(" "));
 const toks = x => normTitle(x).split(" ").filter(w => w.length > 3 && !STOP.has(w));
-const ALIAS = { "four stages of infidelity recovery": "s-four-stages" };
 function matchItem(title) {
   const n = normTitle(title); if (!n) return null;
-  const items = allItems();
-  if (ALIAS[n]) { const a = items.find(it => it.id === ALIAS[n]); if (a) return a; }
-  const exact = items.find(it => normTitle(it.title) === n); if (exact) return exact;
-  const inc = items.find(it => { const m = normTitle(it.title); return n.length > 12 && m.length > 12 && (m.includes(n) || n.includes(m)); }); if (inc) return inc;
+  const cands = []; allItems().forEach(it => [it.title].concat(it.alt || []).forEach(t => cands.push({ it, t })));
+  const exact = cands.find(c => normTitle(c.t) === n); if (exact) return exact.it;
+  const inc = cands.find(c => { const m = normTitle(c.t); return n.length > 12 && m.length > 12 && (m.includes(n) || n.includes(m)); }); if (inc) return inc.it;
   const t = toks(title); if (t.length < 3) return null;
   let best = null, bs = 0;
-  items.forEach(it => { const u = toks(it.title); if (u.length < 3) return; const sh = t.filter(w => u.includes(w)).length, sc = sh / Math.min(t.length, u.length); if (sh >= 3 && sc > bs) { bs = sc; best = it; } });
+  cands.forEach(c => { const u = toks(c.t); if (u.length < 3) return; const sh = t.filter(w => u.includes(w)).length, sc = sh / Math.min(t.length, u.length); if (sh >= 3 && sc > bs) { bs = sc; best = c.it; } });
   return bs >= 0.67 ? best : null;
 }
 function parseTable(text) {
@@ -1090,6 +1135,7 @@ function renderSources() {
     ["Script queue and board","Connected","good","Scripts come from your Drive \"To Edit\" and \"To Film\" folders. Columns and dates you set are saved on this page.","Done"],
     ["Descript (filmed versus edited)","Connected","good","Reads your project list. A project in the \"To Edit\" folder is Filmed, needs editing. A name ending in _edited is Edited. Press Sync from Descript on the Production tab. Descript does not say whether a thumbnail or schedule exists, so the last two columns stay manual.","Done"],
     ["Kit (subscribers, forms, broadcasts)","Connected","good","Live numbers and signup sources on the Funnel tab. Per-video attribution fills in once your pinned-comment links carry UTM tags.","Done"],
+    ["Weekly email (Kit broadcast drafts)","Connected","good","Reads your scripts from Drive, drafts the email with Claude in your voice, and saves it to Kit as a draft. You review, schedule and send it in Kit.","Done"],
     ["Therapy waitlist (Squarespace form emails)","Connected through Gmail","good","Reads the \"Form Submission - Join My Waitlist Form\" emails, sorts by the Illinois answer, and fills your reply. Nothing is sent from the page.","Done"],
     ["ThriveCart course sales","Connected through Gmail","good","Reads your sale emails for orders, revenue and dates. It cannot give checkout views or which video sent the buyer.","Done"],
     ["Your Claude planning chat","Copy and paste","warn","No connector reads project chats. Use the two copy-paste buttons in Production.","Done"],
@@ -1196,13 +1242,14 @@ function renderWaitlist() {
   const list = all.filter(w => bucket(w) === wlFilter);
   el.innerHTML = list.length ? list.map(w => {
     const loc = wlLoc(w), draft = w.draft != null ? w.draft : wlDraft(w);
-    const locPill = loc === "il" ? `<span class="pill good">Illinois</span>` : loc === "out" ? `<span class="pill warn">Not in Illinois</span>` : `<span class="pill crit">Location unknown</span>`;
+    const src = wlState(w).loc ? "you set this" : "from your form", showRow = w.il === null || w.showLoc;
+    const locPill = loc === "il" ? `<span class="pill good">Illinois, ${src}</span>` : loc === "out" ? `<span class="pill warn">Not in Illinois, ${src}</span>` : `<span class="pill crit">No answer on the form</span>`;
     return `<div class="card cm" data-wid="${esc(w.id)}">
-      <header><span class="who">${esc(w.name || "(no name)")}</span>${locPill}<span class="pill ${w.marketing ? "acc" : ""}">${w.marketing ? "Opted in to updates" : "Did not opt in to updates"}</span><span class="muted mono" style="font-size:12px">${short(w.date)}${w.earlier.length ? " · also sent " + w.earlier.map(short).join(", ") : ""}</span></header>
+      <header><span class="who">${esc(w.name || "(no name)")}</span>${locPill}<span class="pill ${w.marketing ? "acc" : ""}">${w.marketing ? "Opted in to updates" : "Did not opt in to updates"}</span>${showRow ? "" : `<button class="btn small" type="button" data-wact="showloc">Change location</button>`}<span class="muted mono" style="font-size:12px">${short(w.date)}${w.earlier.length ? " · also sent " + w.earlier.map(short).join(", ") : ""}</span></header>
       <div class="muted mono" style="font-size:12.5px;overflow-wrap:anywhere">${esc(w.email)}</div>
       ${w.fields.map(x => `<div class="body"><span class="muted" style="font-size:12px">${esc(x[0])}</span><br>${esc(x[1])}</div>`).join("")}
       ${loc ? "" : `<div class="note">The form had no Illinois answer. Pick one to see the matching reply.</div>`}
-      <div class="row"><span class="muted" style="font-size:12px">Location</span><button class="btn small" type="button" data-wact="loc-il">Illinois</button><button class="btn small" type="button" data-wact="loc-out">Not Illinois</button></div>
+      ${showRow ? `<div class="row"><span class="muted" style="font-size:12px">Location</span><button class="btn small" type="button" data-wact="loc-il">Illinois</button><button class="btn small" type="button" data-wact="loc-out">Not Illinois</button></div>` : ""}
       ${loc ? `<div><label for="wd-${esc(w.id)}">Suggested reply</label><textarea id="wd-${esc(w.id)}" data-wact="draft" rows="9">${esc(draft)}</textarea></div>` : ""}
       ${w.confirmKit ? `<div class="note">Add ${esc(w.email)} to Kit and tag them "${esc(WL_TAG)}"? Kit automations tied to that tag will run.<div class="row" style="margin-top:6px"><button class="btn small primary" type="button" data-wact="kit-go">Yes, add to Kit</button><button class="btn small" type="button" data-wact="kit-cancel">Cancel</button></div></div>` : ""}
       <div class="row">
@@ -1253,7 +1300,8 @@ document.addEventListener("click", async e => {
   const b = e.target.closest("#wlList [data-wact]"); if (!b || b.tagName === "TEXTAREA") return;
   const card = b.closest("[data-wid]"), w = (WAIT || []).find(x => x.id === card.dataset.wid), act = b.dataset.wact, ta = $("textarea", card), status = $("[data-role=status]", card);
   if (!w) return;
-  const mark = async patch => { await persist("waitlist", w.id, { ...wlState(w), ...patch }); w.draft = null; renderWaitlist(); };
+  const mark = async patch => { await persist("waitlist", w.id, { ...wlState(w), ...patch }); w.draft = null; w.showLoc = false; renderWaitlist(); };
+  if (act === "showloc") { w.showLoc = true; renderWaitlist(); return; }
   if (act === "loc-il") return mark({ loc: "il" });
   if (act === "loc-out") return mark({ loc: "out" });
   if (act === "replied") return mark({ status: "replied" });
@@ -1335,7 +1383,7 @@ async function loadKit() {
   if (fo.status === "fulfilled") { const l = (asObj(fo.value) || {}).forms; if (Array.isArray(l)) KIT.forms = l.filter(f => !f.archived).map(f => ({ id: f.id, name: f.name, count: f.subscriber_count || 0, url: f.embed_url, created: String(f.created_at).slice(0, 10) })); } else bad = bad || fo.reason;
   if (br.status === "fulfilled") { const l = (asObj(br.value) || {}).broadcasts; if (Array.isArray(l)) KIT.broadcasts = l.map(b => ({ id: b.id, subject: b.subject, date: String(b.send_at).slice(0, 10), recipients: b.stats.recipients, open: b.stats.open_rate, click: b.stats.click_rate, unsub: b.stats.unsubscribes })); } else bad = bad || br.reason;
   KIT.live = !bad || KIT.live;
-  btn.disabled = false; btn.textContent = "Refresh from Kit"; renderKit(); renderFunnel(); renderInsights();
+  btn.disabled = false; btn.textContent = "Refresh from Kit"; renderKit(); renderFunnel(); renderInsights(); renderEmail();
   toast(bad ? mcpMsg(bad, "Kit") : "Updated from Kit");
 }
 async function loadAttr() {
@@ -1427,6 +1475,159 @@ async function applyDescript() {
 }
 document.addEventListener("click", e => { if (e.target.id === "descriptSync") descriptSync(); if (e.target.id === "applyDsc") { e.target.disabled = true; applyDescript(); } });
 
+/* ============================ WEEKLY EMAIL (draft into Kit) ============================ */
+const STYLE_SAMPLE = `Hi there,
+
+After an affair, you're not only asking what happened. You're asking a harder question: is this who they really are?
+
+The details won't answer that. The psychology underneath the choice will.
+
+My new video walks through five profiles of the person who had the affair, what drives each one, and what real change requires. Understanding a profile is never an excuse for the behavior. It's how you tell the difference between someone changing and someone appearing to.
+
+👉 Watch here
+
+Try this week: the "behavior, not apology" log
+Apologies are easy to give and hard to measure. Behavior is easier to track. (three short steps followed)
+
+If you're the partner who cheated, do the reverse: write down one hard thing you said out loud this week that you would have swallowed before.
+
+This is a clinical exercise from my work with couples, not a research-tested protocol. Use it as a way to ground yourself in what you can actually observe.
+
+Which profile landed for you? Hit reply and tell me.
+
+Wes`;
+const PS_STD = `P.S.\nIf you're in Illinois and looking for therapy, you can join my waitlist here: https://weswhitecounseling.com/waitlist\nFor coaching anywhere in the world, including the 2-day Affair Recovery Intensive, indicate your interest here: ${"https://prodigious-originator-1801.kit.com/08c0d6a73c"}`;
+const FOLDERS = ["1Xgf6oQh18jREQ_za2aC_r4GkbQrXXT6y", "1e2xUohVPadOztH1Iibc9BgtGRVKdy91b"];
+const EM = { scripts: {}, notes: {}, lineup: null };
+const DOW = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+const dowOf = s => DOW[dateObj(s).getUTCDay()];
+function nextDow(d) { let s = today(); while (dateObj(s).getUTCDay() !== d) s = addDays(s, 1); return s; }
+function emailLineup(D) {
+  const ytFor = title => { const n = normTitle(title); return STATE.videos.find(v => { const m = normTitle(v.title); return m === n || (n.length > 12 && (m.includes(n) || n.includes(m))); }) || null; };
+  const rows = [], used = new Set();
+  allItems().forEach(it => { const st = itemState(it); if (!st.date) return; const yt = ytFor(it.title) || (it.alt || []).map(ytFor).find(Boolean) || null; if (yt) used.add(yt.id); rows.push({ key: it.id, title: it.title, date: yt ? yt.pub : st.date, it, yt, fmt: it.fmt }); });
+  STATE.videos.forEach(v => { if (!used.has(v.id)) rows.push({ key: v.id, title: v.title, date: v.pub, it: null, yt: v, fmt: v.min >= 10 ? "long" : "short" }); });
+  rows.sort((a, b) => a.date.localeCompare(b.date));
+  return { posted: rows.filter(r => r.date <= D).slice(-2), next: rows.find(r => r.date > D) || null };
+}
+function renderEmail() {
+  if (!$("#emDate")) return;
+  const last = (KIT.broadcasts || []).map(b => b.date).sort().pop(), ago = last ? daysBetween(last, today()) : null;
+  $("#emStatus").textContent = last ? `Your last email went out ${short(last)}, ${ago} days ago. Pick a send day. The email recaps the last two videos, teases the next one, and adds your own color.` : "Pick a send day.";
+  $("#cEm").textContent = ago == null ? "" : ago + "d"; $("#cEm").classList.toggle("alert", ago != null && ago > 7);
+  const fri = nextDow(5), mon = nextDow(1);
+  $("#emQuick").innerHTML = [[mon, "Monday " + short(mon)], [fri, "Friday " + short(fri)]].map(q => `<button class="chip" type="button" data-emd="${q[0]}" aria-pressed="${$("#emDate").value === q[0]}">${q[1]}</button>`).join("");
+  if (!$("#emDate").value) $("#emDate").value = fri < mon ? fri : mon;
+  const D = $("#emDate").value, L = emailLineup(D); EM.lineup = L;
+  const row = (r, tag) => {
+    const sc = EM.scripts[r.key];
+    return `<div class="item" data-ek="${esc(r.key)}"><div class="top1"><div class="ttl">${esc(r.title)}</div><div class="chips"><span class="pill ${tag === "Coming up" ? "warn" : "acc"}">${tag}</span><span class="pill">${r.fmt === "long" ? "Long" : "Short"} · ${dowOf(r.date).slice(0, 3)} ${short(r.date)}</span>${r.yt ? `<span class="pill good">Posted</span>` : ""}</div></div>
+      <div class="note">${sc ? (sc.text ? `Script loaded: ${esc(sc.title)}` : `No script found in Drive. Add a few bullets below.`) : `Press "Load scripts from Drive" to pull what this video covers, or add bullets below.`}</div>
+      <textarea data-emn rows="2" style="background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:6px 8px;width:100%;font-size:13px" placeholder="Optional: key points or anything to stress">${esc(EM.notes[r.key] || "")}</textarea></div>`;
+  };
+  $("#emVideos").innerHTML = (L.posted.length ? L.posted.map(r => row(r, "Posted")).join("") : `<div class="muted" style="font-size:13px">No videos on or before this day.</div>`) + (L.next ? row(L.next, "Coming up") : `<div class="muted" style="font-size:13px">No dated video after this day, so there's nothing to tease.</div>`);
+  const lmSel = $("#emLm"), cur = lmSel.value, firstLong = [...L.posted].reverse().find(r => r.it && r.it.lm), def = (EM.lmTouched && cur) ? cur : (firstLong ? firstLong.it.lm : "none");
+  lmSel.innerHTML = `<option value="none">None</option>` + Object.entries(LM_KEYS).map(([k, l]) => `<option value="${k}">${esc(l.label)}${l.url ? "" : " (no link yet)"}</option>`).join(""); lmSel.value = def;
+}
+async function loadScripts() {
+  const btn = $("#emLoad"), msg = $("#emMsg"), L = EM.lineup; if (!L) return;
+  const mcp = await use("mcp"); if (!mcp) { msg.textContent = "Drive isn't available in this view."; return; }
+  btn.disabled = true; msg.textContent = "Reading scripts…";
+  const rows = [...L.posted, ...(L.next ? [L.next] : [])];
+  try {
+    for (const r of rows) {
+      let id = r.it && r.it.doc, title = r.title;
+      if (!id) {
+        const t = toks(r.title).slice(0, 2); if (!t.length) { EM.scripts[r.key] = { text: "" }; continue; }
+        const q = `(${FOLDERS.map(f => `parentId = '${f}'`).join(" or ")}) and mimeType = 'application/vnd.google-apps.document' and ${t.map(w => `title contains '${w.replace(/'/g, "")}'`).join(" and ")}`;
+        const f = ((asObj(await mcp.callTool("Google Drive", "search_files", { query: q, pageSize: 3, excludeContentSnippets: true })) || {}).files || [])[0];
+        if (f) { id = f.id; title = f.title; }
+      }
+      if (!id) { EM.scripts[r.key] = { text: "" }; continue; }
+      const o = asObj(await mcp.callTool("Google Drive", "read_file_content", { fileId: id })) || {};
+      EM.scripts[r.key] = { title: o.title || title, text: String(o.fileContent || "").replace(/\*\*|\\!/g, "").slice(0, 7000) };
+    }
+    msg.textContent = `Loaded ${rows.filter(r => EM.scripts[r.key] && EM.scripts[r.key].text).length} of ${rows.length} scripts.`;
+  } catch (e) { msg.textContent = mcpMsg(e, "Google Drive"); }
+  btn.disabled = false; renderEmail();
+}
+function emailHtml(text) {
+  const A = (u, t) => `<a href="${u}" target="_blank" class="ck-link" rel="noopener noreferrer">${t}</a>`;
+  return text.split(/\n\s*\n/).map(p => p.trim()).filter(Boolean).map(p => {
+    const stash = []; let h = esc(p);
+    h = h.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, (m, t, u) => { stash.push(A(u, t)); return `\u0000${stash.length - 1}\u0000`; });
+    h = h.replace(/(https?:\/\/[^\s<]+[^\s<.,;:!?)])/g, u => { stash.push(A(u, u)); return `\u0000${stash.length - 1}\u0000`; });
+    h = h.replace(/\u0000(\d+)\u0000/g, (m, i) => stash[+i]).replace(/\n/g, "<br>");
+    return `<p class="">${h}</p><p class="">​</p>`;
+  }).join("");
+}
+async function draftEmail() {
+  const btn = $("#emDraft"), msg = $("#emMsg"), L = EM.lineup; if (!L || !L.posted.length) { msg.textContent = "Pick a send day with at least one posted video."; return; }
+  const sample = await use("sample"); if (!sample) { msg.textContent = "Claude drafting isn't available in this view."; return; }
+  const D = $("#emDate").value, lm = LM_KEYS[$("#emLm").value];
+  const vid = (r, tag) => { const sc = EM.scripts[r.key], url = r.yt ? `https://www.youtube.com/watch?v=${r.yt.id}` : "(not posted yet, no link)", n = (EM.notes[r.key] || "").trim(); return `### ${tag}: "${r.title}" (${r.fmt}, ${dowOf(r.date)} ${short(r.date)})\nLink: ${url}\n${n ? "Wes's notes: " + n + "\n" : ""}${sc && sc.text ? "Script:\n" + sc.text : "No script available. Use only the title and Wes's notes. Do not invent what the video says."}`; };
+  const prompt = `You write the weekly broadcast email for Wes White, a Chicago couples therapist whose YouTube channel is about affair recovery. About 80% of readers are betrayed partners and about 20% are the partner who had the affair.
+
+SEND DAY: ${dowOf(D)} ${short(D)}.
+
+VIDEOS TO COVER (most recent last):
+${L.posted.map(r => vid(r, "Posted")).join("\n\n")}
+${L.next ? "\n" + vid(L.next, "Coming up (tease only, no link)") : ""}
+
+WES'S COLOR (his own words, use faithfully): ${$("#emColor").value.trim() || "(none provided)"}
+
+HIS VOICE: a real email of his that performed well, for tone and shape only. Do not copy its sentences:
+"""
+${STYLE_SAMPLE}
+"""
+
+RULES:
+- Start the body with exactly this line: Hi {{ subscriber.first_name | default: "there" }},
+- Structure: a short hook tied to this week's theme; one short paragraph per posted video saying specifically what it covers (draw only on its script or notes) followed by a line like "👉 [Watch here](URL)" using the exact link given; a section for Wes's color; a tease of the coming-up video (what question it answers and the weekday it posts, no link); one small practical step only if a script contains one; a reply prompt ("Hit reply and tell me ..."); sign off "Wes".
+- Wes's color: if he gave some, weave it in as its own short section. If he gave none, write one line in square brackets, exactly like [ADD YOUR COLOR: <a specific question that would draw out something real from his sessions or experience>], and nothing else in that section. Never invent stories, clients, quotes, statistics or personal details.
+- Do not add clinical or research claims that are not in the scripts. If a script labels something as a clinical framework, contested, or gives an evidence tier, keep that label in one short sentence.
+- Plain, warm, short paragraphs, 200 to 320 words, second person. No bullet lists except the optional steps. No em dashes. Do not use the "not X, but Y" construction. No emojis except 👉 before video links.
+- Do NOT add a P.S. or any links other than the video links. Those are added separately.
+- Subject: under 55 characters, specific, no clickbait, sentence case, like "Is this who they really are?".
+- Preview text: under 90 characters, adds new information beyond the subject.
+
+Reply with only JSON: {"subject": string, "subject_alternatives": [string, string], "preview": string, "body": string}. Use \\n\\n between paragraphs in body.`;
+  btn.disabled = true; msg.textContent = "Thinking…";
+  try {
+    const o = await sample.json(prompt, { cache: false });
+    let body = String(o.body || "").trim();
+    const ps = []; if (lm && lm.url) ps.push(`P.S.\nThis week's free guide, ${lm.label}: ${lm.url}`); else if (lm) ps.push(`P.S.\nThis week's free guide: ${lm.label} [ADD LINK]`);
+    if ($("#emPs").checked) ps.push(ps.length ? PS_STD.replace(/^P\.S\.\n/, "") : PS_STD);
+    body = [body, ...ps].join("\n\n");
+    $("#emSubject").value = o.subject || ""; $("#emPreview").value = o.preview || ""; $("#emBody").value = body;
+    $("#emAlts").textContent = (o.subject_alternatives || []).length ? "Other options: " + o.subject_alternatives.join("  |  ") : "";
+    $("#emOut").hidden = false; $("#emKitMsg").textContent = ""; msg.textContent = "Draft ready. Edit anything, and fill any [ADD ...] spots.";
+    $("#emOut").scrollIntoView({ behavior: "smooth", block: "start" });
+  } catch (e) { msg.textContent = ({ not_granted: "Claude access was declined for this page.", rate_limited: "Too many requests. Try again in a minute.", invalid_json: "Claude's answer wasn't usable. Press Draft again." })[e.code] || "Couldn't draft the email. Try again."; }
+  btn.disabled = false;
+}
+async function createKitDraft() {
+  const btn = $("#emKit"), msg = $("#emKitMsg"), body = $("#emBody").value, subject = $("#emSubject").value.trim();
+  if (!subject || !body.trim()) { msg.textContent = "Add a subject and a body first."; return; }
+  if (/\[ADD [^\]]*\]/.test(body) && !btn.dataset.ok) { msg.textContent = "The email still has [ADD ...] spots. Press again to create the draft anyway."; btn.dataset.ok = "1"; return; }
+  const mcp = await use("mcp"); if (!mcp) { msg.textContent = "Kit isn't available in this view."; return; }
+  btn.disabled = true; msg.textContent = "Creating draft…";
+  try {
+    const r = await mcp.callTool("Kit", "create_broadcast", { subject, preview_text: $("#emPreview").value.trim(), content: emailHtml(body), email_template_id: 212168, description: "Weekly email, " + $("#emDate").value });
+    const url = (/"confirm_url"\s*:\s*"([^"]+)"/.exec(JSON.stringify(asObj(r) || r)) || [])[1] || "https://app.kit.com/campaigns";
+    msg.innerHTML = `Draft created. <a href="${esc(url)}" target="_blank" rel="noopener">Open it in Kit to review and schedule</a>.`;
+    delete btn.dataset.ok;
+  } catch (e) { msg.textContent = mcpMsg(e, "Kit"); }
+  btn.disabled = false;
+}
+document.addEventListener("click", e => {
+  const q = e.target.closest("[data-emd]"); if (q) { $("#emDate").value = q.dataset.emd; renderEmail(); return; }
+  if (e.target.id === "emLoad") loadScripts(); if (e.target.id === "emDraft") draftEmail(); if (e.target.id === "emKit") createKitDraft();
+  if (e.target.id === "emCopy") copyText(`Subject: ${$("#emSubject").value}\nPreview: ${$("#emPreview").value}\n\n${$("#emBody").value}`, "Email copied");
+});
+document.addEventListener("change", e => { if (e.target.id === "emDate") renderEmail(); if (e.target.id === "emLm") EM.lmTouched = true; });
+document.addEventListener("input", e => { if (e.target.matches("[data-emn]")) EM.notes[e.target.closest("[data-ek]").dataset.ek] = e.target.value; });
+
 /* ============================ LIVE REFRESH (VidIQ) ============================ */
 function decodeHtml(h) { const s = String(h || "").replace(/<br\s*\/?>/gi, "\n"); return new DOMParser().parseFromString(s, "text/html").body.textContent || ""; }
 function parseMin(iso) { const m = /PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/.exec(iso || ""); return m ? (+(m[1] || 0)) * 60 + (+(m[2] || 0)) + (+(m[3] || 0)) / 60 : 0; }
@@ -1478,7 +1679,7 @@ async function refreshLive() {
 $("#refreshBtn").addEventListener("click", refreshLive);
 
 /* ============================ TABS ============================ */
-const TABS = ["overview","pipeline","comments","waitlist","funnel","sources"];
+const TABS = ["overview","pipeline","comments","waitlist","email","funnel","sources"];
 function showTab(k) {
   if (!TABS.includes(k)) k = "overview";
   TABS.forEach(t => { $("#p-" + t).hidden = t !== k; });
@@ -1488,7 +1689,7 @@ function showTab(k) {
 $$(".tab").forEach(b => b.addEventListener("click", () => { try { history.replaceState(null, "", "#" + b.dataset.tab); } catch (e) {} showTab(b.dataset.tab); }));
 addEventListener("hashchange", () => showTab(location.hash.slice(1)));
 
-function renderAll() { renderKpis(); renderCharts(); renderVideos(); renderInsights(); renderPipeline(); renderComments(); renderWaitlist(); renderFunnel(); renderSales(); renderSources(); fillTplBox(); }
+function renderAll() { renderKpis(); renderCharts(); renderVideos(); renderInsights(); renderPipeline(); renderComments(); renderWaitlist(); renderFunnel(); renderSales(); renderSources(); fillTplBox(); renderEmail(); }
 lsLoad();
 renderAll();
 showTab(location.hash.slice(1));
