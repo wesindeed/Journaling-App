@@ -10,4 +10,9 @@ Single-file dashboard for the Wes White Counseling YouTube channel and content b
 - "Pull new scripts from Drive" reads the To Film folder through the Google Drive connector.
 - Course sales are parsed from ThriveCart "Sale notification" emails through the Gmail connector (date, product, amount only).
 
-Not yet connected: Kit (official connector exists, needs adding in claude.ai), Google Analytics, Squarespace forms. Descript is intentionally not used. See the Data sources tab.
+- Waitlist tab: reads Squarespace "Join My Waitlist Form" emails from Gmail, sorts by the Illinois answer, fills editable reply templates (copy, or create a Gmail draft; never sends). Outside-Illinois requests can be added to Kit with a tag, only when they ticked the email-updates box. Request details are not stored; only replied and skipped marks are.
+- Kit panel (Funnel tab): subscribers, forms, broadcasts and signup sources via the Kit connector.
+- Descript sync: a project in the To Edit folder is Filmed, needs editing; a name ending _edited is Edited.
+- Website card reads a Google Sheet filled by `ga4-to-sheets.gs` (Google Apps Script, free). The script has not been run against a real GA4 property.
+
+Not yet set up: Google Analytics sheet, Search Console. See the Data sources tab.

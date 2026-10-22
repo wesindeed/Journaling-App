@@ -245,6 +245,7 @@ td.mono, th.r, td.r { text-align: right; }
         <button class="tab" role="tab" data-tab="overview" aria-selected="true">Overview</button>
         <button class="tab" role="tab" data-tab="pipeline" aria-selected="false">Production <span class="count" id="cPipe">0</span></button>
         <button class="tab" role="tab" data-tab="comments" aria-selected="false">Comments <span class="count alert" id="cCom">0</span></button>
+        <button class="tab" role="tab" data-tab="waitlist" aria-selected="false">Waitlist <span class="count" id="cWait">0</span></button>
         <button class="tab" role="tab" data-tab="funnel" aria-selected="false">Funnel</button>
         <button class="tab" role="tab" data-tab="sources" aria-selected="false">Data sources</button>
       </nav>
@@ -283,8 +284,9 @@ td.mono, th.r, td.r { text-align: right; }
           <div class="grid g2" style="margin-top:14px">
             <div>
               <p style="color:var(--ink-2);font-size:14px">The board is the source of truth for status and dates. Your planning chat is for ideas, scripts and scheduling advice. When you start a planning session, paste the board in. When the chat changes the plan, paste its table back here.</p>
-              <div class="row" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn primary" id="copyBoard" type="button">Copy board for my chat</button><button class="btn" id="driveSync" type="button">Pull new scripts from Drive</button></div>
+              <div class="row" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn primary" id="copyBoard" type="button">Copy board for my chat</button><button class="btn" id="descriptSync" type="button">Sync from Descript</button><button class="btn" id="driveSync" type="button">Pull new scripts from Drive</button></div>
               <p class="muted" style="font-size:12.5px;margin-top:8px" id="driveNote"></p>
+              <div id="syncOut"></div>
             </div>
             <div>
               <label class="eyebrow" for="importTxt">Paste the chat's table here</label>
@@ -324,11 +326,45 @@ td.mono, th.r, td.r { text-align: right; }
       </div>
     </section>
 
+    <!-- WAITLIST -->
+    <section class="panel stack" id="p-waitlist" role="tabpanel" hidden>
+      <div>
+        <div class="sec-head"><div><h2>Therapy waitlist</h2><p>New requests from your Squarespace "Join My Waitlist" form, read from the notification emails in Gmail and sorted by the Illinois answer. Replies are drafts for you to edit. Nothing is sent from this page.</p></div>
+          <button class="btn primary" id="wlBtn" type="button">Check Gmail for requests</button></div>
+        <details class="card" id="wlTplBox">
+          <summary><h3 style="display:inline">Reply templates</h3> <span class="muted" style="font-size:12.5px">Edit once, saved for next time</span></summary>
+          <div class="grid" style="gap:12px;margin-top:14px">
+            <div class="field"><label class="eyebrow" for="tplTimeline">Your estimated timeline sentence (fills {timeline} in the Illinois reply)</label><input id="tplTimeline" type="text" placeholder="For example: I don't expect an opening before early spring."></div>
+            <div class="field"><label class="eyebrow" for="tplIl">In Illinois</label><textarea id="tplIl" rows="8"></textarea></div>
+            <div class="field"><label class="eyebrow" for="tplOutYes">Outside Illinois, ticked the email-updates box</label><textarea id="tplOutYes" rows="12"></textarea></div>
+            <div class="field"><label class="eyebrow" for="tplOutNo">Outside Illinois, did not tick the email-updates box</label><textarea id="tplOutNo" rows="12"></textarea></div>
+            <div class="row" style="display:flex;gap:8px"><button class="btn primary" id="tplSave" type="button">Save templates</button><button class="btn" id="tplReset" type="button">Reset to defaults</button></div>
+          </div>
+        </details>
+      </div>
+      <div class="chips" id="wlFilters"></div>
+      <div id="wlList" class="list"></div>
+      <p class="muted" style="font-size:12.5px">Request details are read on demand and are not saved by this page. Only your replied and skipped marks are saved.</p>
+    </section>
+
     <!-- FUNNEL -->
     <section class="panel stack" id="p-funnel" role="tabpanel" hidden>
       <div>
-        <div class="sec-head"><div><h2>Video to customer path</h2><p>Only the YouTube step is live. The other four need the connections on the Data sources tab, and stay empty here until then.</p></div></div>
+        <div class="sec-head"><div><h2>Video to customer path</h2><p>A dash means that step still needs a connection. Website needs the Analytics sheet. ThriveCart and the waitlist fill in when you press their Gmail buttons.</p></div></div>
         <div class="flow" id="flow"></div>
+      </div>
+      <div class="card" id="kitCard">
+        <div class="sec-head"><div><h2>Kit email list</h2><p id="kitNote"></p></div>
+          <button class="btn" id="kitBtn" type="button">Refresh from Kit</button></div>
+        <div id="kitOut"></div>
+      </div>
+      <div class="card" id="webCard">
+        <div class="sec-head"><div><h2>Website</h2><p>Traffic and waitlist conversion from Google Analytics, passed through a Google Sheet you own. Setup is on the Data sources tab.</p></div></div>
+        <div class="row" style="display:flex;gap:8px;flex-wrap:wrap;align-items:end;margin-bottom:12px">
+          <div class="field" style="flex:1 1 280px"><label class="eyebrow" for="sheetUrl">Google Sheet link</label><input id="sheetUrl" type="text" placeholder="https://docs.google.com/spreadsheets/d/..."></div>
+          <button class="btn primary" id="webBtn" type="button">Load website data</button>
+        </div>
+        <div id="webOut"></div>
       </div>
       <div class="card" id="salesCard">
         <div class="sec-head"><div><h2>Course sales</h2><p>Read from the "Sale notification" emails ThriveCart sends to your Gmail. Only the date, product and amount are kept. Orders from your own addresses and anything with "test" in the billing name are hidden.</p></div>
@@ -373,14 +409,19 @@ td.mono, th.r, td.r { text-align: right; }
           </ol>
         </div>
         <div class="card">
-          <h3>Connect Kit</h3>
-          <p class="muted" style="font-size:13px;margin:6px 0 10px">Kit publishes an official connector for Claude, so Zapier is not needed.</p>
+          <h3>Website data from Google Analytics</h3>
+          <p class="muted" style="font-size:13px;margin:6px 0 10px">Free, one-time, about 15 minutes. A small Google script copies your daily Analytics numbers into a Google Sheet you own, and this page reads the Sheet.</p>
           <ol class="steps">
-            <li>In claude.ai, open Settings, then Connectors, find <b>Kit</b>, and sign in.</li>
-            <li>Come back to this project and tell me it's connected. I need to read its tools before I can build the panel.</li>
-            <li>The panel will show subscribers by day and form, and broadcast engagement. Which videos drive signups needs one Kit form per call-to-action.</li>
+            <li>Create a new Google Sheet. Open Extensions, then Apps Script.</li>
+            <li>Press <b>Copy script</b> below and paste it in. Add the "Google Analytics Data API" under Services.</li>
+            <li>Set your GA4 property ID and your waitlist and blog paths at the top of the script.</li>
+            <li>Run <b>updateGa4</b> once, approve the permissions, then run <b>installDailyTrigger</b>.</li>
+            <li>Paste the Sheet's link into the Website card on the Funnel tab.</li>
           </ol>
+          <div class="row" style="display:flex;gap:8px;margin-top:10px"><button class="btn primary" id="copyGa" type="button">Copy script</button></div>
+          <p class="muted" style="font-size:12px;margin-top:8px">Google Analytics does not report search impressions. That comes from Google Search Console and can use the same Sheet approach later.</p>
         </div>
+      </div>
       </div>
     </section>
   </main>
@@ -432,20 +473,20 @@ const STAGES = [
 ];
 const DRIVE = id => "https://docs.google.com/document/d/" + id + "/edit";
 const ITEMS = [
-  {id:"s-four-stages",title:"Surviving Infidelity: The 4 Stages Every Betrayed Partner Goes Through",fmt:"long",len:"12–14 min",drafted:"2026-08-31",doc:"1-CAhp3yuON8eqnQ3P3bZ7fnHVcu5XxnBMgi9Vfi8Ye8",prio:1,note:"Targets \"surviving infidelity\" (29,811 searches a month, per the script). Highest search volume in the queue, drafted 52 days ago."},
-  {id:"s-help-partner",title:"How to Help Your Partner Heal After Infidelity (What They're Actually Going Through)",fmt:"long",len:"12–14 min",drafted:"2026-10-20",doc:"1XhOri6PG0Vxex5gG3q290941YjWIi4HczFcd3tZobD0",prio:2,note:"Speaks to the partner who cheated. Three recent commenters are in exactly that spot."},
-  {id:"s-holidays",title:"Surviving the Holidays After Betrayal",fmt:"long",len:"13–15 min",drafted:"2026-10-20",doc:"1tN5uHKc20XNfcP4f3Vt7cJjUj3F5hP0iGrOzoDQeY5I",prio:0,dueBy:"2026-11-12",note:"Seasonal. Thanksgiving is Nov 26, so aim to publish by about Nov 12."},
-  {id:"s-affair-partner",title:"Why the Affair Partner Seemed So Different (And What It Actually Means About Your Marriage)",fmt:"long",len:"11–13 min",drafted:"2026-10-20",doc:"1w4fb8CxSiBlhBuQEW2fWHKcmhukrzMH_XFVejdg4ric",prio:3,note:"Mid-video: 5 Hidden Mistakes. End: course."},
+  {id:"s-four-stages",stage:"filmed",title:"Surviving Infidelity: The 4 Stages Every Betrayed Partner Goes Through",fmt:"long",len:"12–14 min",drafted:"2026-08-31",doc:"1-CAhp3yuON8eqnQ3P3bZ7fnHVcu5XxnBMgi9Vfi8Ye8",prio:1,note:"Targets \"surviving infidelity\" (29,811 searches a month, per the script). Highest search volume in the queue, drafted 52 days ago."},
+  {id:"s-help-partner",stage:"filmed",title:"How to Help Your Partner Heal After Infidelity (What They're Actually Going Through)",fmt:"long",len:"12–14 min",drafted:"2026-10-20",doc:"1XhOri6PG0Vxex5gG3q290941YjWIi4HczFcd3tZobD0",prio:2,note:"Speaks to the partner who cheated. Three recent commenters are in exactly that spot."},
+  {id:"s-holidays",stage:"filmed",title:"Surviving the Holidays After Betrayal",fmt:"long",len:"13–15 min",drafted:"2026-10-20",doc:"1tN5uHKc20XNfcP4f3Vt7cJjUj3F5hP0iGrOzoDQeY5I",prio:0,dueBy:"2026-11-12",note:"Seasonal. Thanksgiving is Nov 26, so aim to publish by about Nov 12."},
+  {id:"s-affair-partner",stage:"filmed",title:"Why the Affair Partner Seemed So Different (And What It Actually Means About Your Marriage)",fmt:"long",len:"11–13 min",drafted:"2026-10-20",doc:"1w4fb8CxSiBlhBuQEW2fWHKcmhukrzMH_XFVejdg4ric",prio:3,note:"Mid-video: 5 Hidden Mistakes. End: course."},
   {id:"s-healing-signs",title:"Healing from Infidelity: Signs You're Actually Getting Better",fmt:"long",len:"9–11 min",drafted:"2026-10-20",doc:"1SEAhrNlG_VKzrjQ4ycbDjg-KfDb4duuVovrRULeQP1Y",prio:4,note:"Points back to your 4 Stages video, so film that one first."},
-  {id:"s-porn",title:"Why His Porn Use Feels Like an Affair (Because Your Brain Says It Is)",fmt:"long",len:"20–25 min",drafted:"2026-10-14",doc:"1pR2pVJna4Sez0g2PX8EJscA7EQdKr7JBonICpl--quk",prio:5,note:"Cornerstone for the porn short dated Nov 10. Long videos of 20+ minutes are your top two so far."},
+  {id:"s-porn",stage:"filmed",title:"Why His Porn Use Feels Like an Affair (Because Your Brain Says It Is)",fmt:"long",len:"20–25 min",drafted:"2026-10-14",doc:"1pR2pVJna4Sez0g2PX8EJscA7EQdKr7JBonICpl--quk",prio:5,note:"Cornerstone for the porn short dated Nov 10. Long videos of 20+ minutes are your top two so far."},
   {id:"s-mind",title:"You're Not Losing Your Mind. You're Experiencing Betrayal Trauma.",fmt:"long",len:"11–14 min",drafted:"2026-07-06",doc:"1R2iyuXho_oHUDXOS-DDvUSXCu-UjSrp-bNpyPd2WDCo",prio:6,note:"Drafted Jul 6 and still unfilmed."},
   {id:"s-last",title:"Do Affair Relationships Actually Last? What Research Shows",fmt:"long",len:"14–17 min",drafted:"2026-09-10",doc:"1N-IBjvGmEl20c_mrs7GbyPhrEl8EEkavbI129Dxdd7s",prio:7,note:"Its keyword (why people cheat, 15,314 a month) is the one your 9,690-view video already ranks for. Retitle or angle it differently."},
   {id:"s-nothing",title:"\"It Has Nothing to Do With You\": Why Porn Betrayal Feels So Personal",fmt:"short",len:"5–6 min",drafted:"2026-10-14",doc:"1s9dhS3E1f5Llh0fetNihrmNohWPsMWPP-IDXKZTdOLw",date:"2026-11-10",note:"Script says it posts Nov 10 and pairs with the porn cornerstone."},
-  {id:"s-family",title:"What to Say When Family Asks About the Affair at the Holidays",fmt:"short",len:"5–6 min",drafted:"2026-10-20",doc:"1Rfp5Thm9oth8fI_FIYBaml73-A7K_q88Wye9R3TWlHY",date:"2026-11-17",note:"Script says it posts Nov 17."},
-  {id:"s-dday",title:"What to Do the Week Before a D-Day Anniversary",fmt:"short",len:"5–6 min",drafted:"2026-10-14",doc:"1bgN5-ZFWTj1VYPaWeuR9GkVo7qWlnNmxokt2mdzWI4M",date:"2026-11-24",note:"Script says it posts Nov 24."},
-  {id:"s-forgive",title:"Is It Forgiveness or Is It Giving Up? How to Tell the Difference",fmt:"short",len:"5–6 min",drafted:"2026-10-14",doc:"1oEo36xUaUv5a-szb0JCJ1_2xC-iV3_1TxKqtjn3yS0A",date:"2026-12-15",note:"Script says it posts Dec 15."},
-  {id:"s-grief",title:"How to Cope With Being Cheated On: The Grief Nobody Talks About",fmt:"short",len:"5–6 min",drafted:"2026-10-14",doc:"1mmNZu7FMgr8mqCz4I4k3RbDOPpRszbx21VxErwJa7gY",date:"2026-12-22",note:"Script says it posts Dec 22."},
-  {id:"s-signs",title:"3 Signs Your Partner Is Actually Doing the Work After an Affair",fmt:"short",len:"5–6 min",drafted:"2026-09-10",doc:"1AfK__RIe__RvpH0kqxDvGGS28tg_10UwJpNpxvfTRbs",note:"Drafted Sep 10, no date. Good filler for a short slot."}
+  {id:"s-family",stage:"filmed",title:"What to Say When Family Asks About the Affair at the Holidays",fmt:"short",len:"5–6 min",drafted:"2026-10-20",doc:"1Rfp5Thm9oth8fI_FIYBaml73-A7K_q88Wye9R3TWlHY",date:"2026-11-17",note:"Script says it posts Nov 17."},
+  {id:"s-dday",stage:"filmed",title:"What to Do the Week Before a D-Day Anniversary",fmt:"short",len:"5–6 min",drafted:"2026-10-14",doc:"1bgN5-ZFWTj1VYPaWeuR9GkVo7qWlnNmxokt2mdzWI4M",date:"2026-11-24",note:"Script says it posts Nov 24."},
+  {id:"s-forgive",stage:"filmed",title:"Is It Forgiveness or Is It Giving Up? How to Tell the Difference",fmt:"short",len:"5–6 min",drafted:"2026-10-14",doc:"1oEo36xUaUv5a-szb0JCJ1_2xC-iV3_1TxKqtjn3yS0A",date:"2026-12-15",note:"Script says it posts Dec 15."},
+  {id:"s-grief",stage:"filmed",title:"How to Cope With Being Cheated On: The Grief Nobody Talks About",fmt:"short",len:"5–6 min",drafted:"2026-10-14",doc:"1mmNZu7FMgr8mqCz4I4k3RbDOPpRszbx21VxErwJa7gY",date:"2026-12-22",note:"Script says it posts Dec 22."},
+  {id:"s-signs",stage:"filmed",title:"3 Signs Your Partner Is Actually Doing the Work After an Affair",fmt:"short",len:"5–6 min",drafted:"2026-09-10",doc:"1AfK__RIe__RvpH0kqxDvGGS28tg_10UwJpNpxvfTRbs",note:"Drafted Sep 10, no date. Good filler for a short slot."}
 ];
 const DEFAULT_STAGE = "scripted";
 
@@ -590,10 +631,10 @@ function showTip(e, html) { tip.innerHTML = html; tip.style.opacity = 1; const x
 function hideTip() { tip.style.opacity = 0; }
 
 /* ============================ SAVED STATE (db when available, else this browser) ============================ */
-const saved = { pipeline: {}, comments: {}, sales: {} };
+const saved = { pipeline: {}, comments: {}, sales: {}, waitlist: {}, settings: {} };
 let dbh = null;
 const LS = "content-hq-v1";
-function lsLoad() { try { const j = JSON.parse(localStorage.getItem(LS) || "null"); if (j) { saved.pipeline = j.pipeline || {}; saved.comments = j.comments || {}; saved.sales = j.sales || {}; } } catch (e) {} }
+function lsLoad() { try { const j = JSON.parse(localStorage.getItem(LS) || "null"); if (j) { saved.pipeline = j.pipeline || {}; saved.comments = j.comments || {}; saved.sales = j.sales || {}; saved.waitlist = j.waitlist || {}; saved.settings = j.settings || {}; } } catch (e) {} }
 function lsSave() { try { localStorage.setItem(LS, JSON.stringify(saved)); } catch (e) {} }
 async function persist(coll, id, data) {
   saved[coll][id] = data;
@@ -605,10 +646,12 @@ async function initDb() {
   if (!dbh) return;
   const err = () => { dbh = null; };
   dbh.collection("pipeline").onSnapshot(s => { s.docs.forEach(d => { saved.pipeline[d.id] = d.data(); }); renderPipeline(); renderBadges(); }, err);
+  dbh.collection("waitlist").onSnapshot(s => { s.docs.forEach(d => { saved.waitlist[d.id] = d.data(); }); renderWaitlist(); }, err);
+  dbh.collection("settings").onSnapshot(s => { s.docs.forEach(d => { saved.settings[d.id] = d.data(); }); fillTplBox(); renderWaitlist(); renderWeb(); }, err);
   dbh.collection("sales").onSnapshot(s => { s.docs.forEach(d => { saved.sales[d.id] = d.data(); }); renderSales(); renderFunnel(); }, err);
   dbh.collection("comments").onSnapshot(s => { s.docs.forEach(d => { saved.comments[d.id] = d.data(); }); renderComments(); renderBadges(); }, err);
 }
-const itemState = it => { const s = { stage: DEFAULT_STAGE, date: it.date || null, ...(saved.pipeline[it.id] || {}) }; s.stage = ({ research: "planned", editing: "filmed" })[s.stage] || s.stage; return s; };
+const itemState = it => { const s = { stage: it.stage || DEFAULT_STAGE, date: it.date || null, ...(saved.pipeline[it.id] || {}) }; s.stage = ({ research: "planned", editing: "filmed" })[s.stage] || s.stage; return s; };
 const commentDone = c => !!(saved.comments[c.id] && saved.comments[c.id].done) || c.autoDone;
 const commentDraft = c => (saved.comments[c.id] && saved.comments[c.id].draft != null) ? saved.comments[c.id].draft : (c.draft || "");
 
@@ -661,7 +704,7 @@ function lineChart(el, vals, labelFn) {
 }
 function barChart(el, vals, labelFn) {
   const W = 560, H = 190, L = 44, R = 18, T = 14, B = 26;
-  const max = Math.max(...vals), hi = Math.ceil(max / 2000) * 2000;
+  const max = Math.max(...vals, 1), pw = Math.pow(10, Math.floor(Math.log10(max))), nn = max / pw, hi = ([1, 1.2, 1.5, 2, 3, 4, 5, 8, 10].find(k => nn <= k)) * pw;
   const bw = (W - L - R) / vals.length, y = v => T + (H - T - B) * (1 - v / hi);
   const g = [0, hi / 2, hi].map(t => `<line class="grid-line" x1="${L}" x2="${W - R}" y1="${y(t)}" y2="${y(t)}"/><text x="${L - 6}" y="${y(t) + 3.5}" text-anchor="end">${fmt(t)}</text>`).join("");
   const mi = vals.indexOf(max);
@@ -703,6 +746,8 @@ function renderInsights() {
     {p:"Funnel", cls:"acc", h:"Course-topic videos draw a smaller audience than your other uploads", b:`The two intrusive-thoughts videos average ${fmt(avg(course))} views against ${fmt(avg(others))} for the other ${others.length} videos older than a week. The people most likely to buy are probably already watching your remorse and apology videos.`, act:`<b>Do this:</b> move the course call-to-action into the high-traffic videos, and use the intrusive-thoughts videos as the second step.`, ev:"Hypothesis. The Funnel tab fills in once ThriveCart is connected."},
     {p:"Queue", cls:"warn", h:`${stale} long scripts have no publish date`, b:`The highest-volume script in the queue, "Surviving Infidelity: The 4 Stages" (29,811 searches a month per your script), was drafted Aug 31 and is not dated. The holiday video needs to publish by about Nov 12 to meet Thanksgiving.`, act:`<b>Do this:</b> open Production, switch to Calendar, and use "Suggest a schedule".`, ev:"Source: Google Drive To Film folder"},
     {p:"Replies", cls:"warn", h:`${unrep} comments are waiting for an answer`, b:`Most are from people in the first weeks after discovery, asking a direct question. Drafts are written for each, in your tone from your past replies.`, act:`<b>Do this:</b> open Comments and clear the "Reply" group first. About 20 minutes.`, ev:"Source: VidIQ, 50 most recent threads, Oct 8 to Oct 22"},
+    {p:"Kit", cls:"acc", h:"Your teaching emails out-click your promo emails", b:`"Is this who they really are?" got a ${KIT.broadcasts.find(b => b.id === 26287143)?.click.toFixed(1) ?? "9.6"}% click rate. The three course-promo sends ("Here's what is actually inside", "Last few days at $147", "Closes at midnight") ran 1.9% to 2.9%. Open rates were similar, around 31% to 36%, so the subject lines work and the body is what changes the click.`, act:`<b>Do this:</b> write the next course email in the same shape as the 9.6% one: a story first, the course second.`, ev:"Source: Kit broadcast stats. Six sends, so treat it as a lead."},
+    {p:"Kit", cls:"acc", h:`One landing page carries the list: ${KIT.forms.slice().sort((a, b) => b.count - a.count)[0].name}`, b:`It holds ${KIT.forms.slice().sort((a, b) => b.count - a.count)[0].count} of your ${KIT.growth.total} subscribers. The two newer guides ("5 Hidden Mistakes", "Should I Stay?") launched Oct 19 and Oct 21 and have ${KIT.forms.find(f => f.id === 10067126)?.count ?? 0} and ${KIT.forms.find(f => f.id === 10078667)?.count ?? 0} signups so far. Too early to judge.`, act:`<b>Do this:</b> use the UTM link builder on the Funnel tab for each new pinned comment, so Kit can show which video sent each signup.`, ev:"Source: Kit forms. Checked Oct 22."},
     {p:"Low", cls:"", h:"Tag sets are copy-pasted", b:`Eleven recent videos share the same 12 tags, and the "4 Steps" video has none. Tags carry little weight on YouTube, so this is housekeeping, not a growth lever.`, act:`<b>Do this:</b> only if you are in VidIQ anyway. Skip otherwise.`, ev:"Source: VidIQ video tags"}
   ];
   $("#insights").innerHTML = L.map(i => `<div class="insight"><div><span class="pill ${i.cls}">${i.p}</span></div><div><h3>${i.h}</h3><p>${i.b}</p><p class="act">${i.act}</p><div class="ev">${i.ev}</div></div></div>`).join("");
@@ -733,7 +778,7 @@ function kcard(it) {
   const st = itemState(it), r = risk(st), si = stageIdx(st.stage), href = scriptHref(it);
   return `<div class="kcard" draggable="true" data-id="${esc(it.id)}">
     <div class="kt">${esc(it.title)}</div>
-    <div class="chips"><span class="pill ${it.fmt === "long" ? "acc" : ""}">${it.fmt === "long" ? "Long" : "Short"}${it.len ? " · " + esc(it.len) : ""}</span>${it.dueBy ? `<span class="pill warn">Publish by ${short(it.dueBy)}</span>` : ""}${r ? `<span class="pill ${r.cls}">${esc(r.t)}</span>` : ""}</div>
+    <div class="chips"><span class="pill ${it.fmt === "long" ? "acc" : ""}">${it.fmt === "long" ? "Long" : "Short"}${it.len ? " · " + esc(it.len) : ""}</span>${it.dueBy ? `<span class="pill warn">Publish by ${short(it.dueBy)}</span>` : ""}${st.descript ? `<span class="pill">In Descript</span>` : ""}${r ? `<span class="pill ${r.cls}">${esc(r.t)}</span>` : ""}</div>
     ${it.note ? `<details><summary>Notes</summary><p class="note">${esc(it.note)}</p></details>` : ""}
     <div class="kctl"><button class="btn small" type="button" data-mv="-1" ${si <= 0 ? "disabled" : ""} aria-label="Move back one column" title="Move back">‹</button><input type="date" data-act="date" value="${st.date || ""}" aria-label="Publish date"><button class="btn small" type="button" data-mv="1" ${si >= STAGES.length - 1 ? "disabled" : ""} aria-label="Move forward one column" title="${st.stage === "scheduled" ? "Mark published" : "Move forward"}">›</button>${href ? `<a class="small-link" href="${esc(href)}" target="_blank" rel="noopener">Script</a>` : ""}</div></div>`;
 }
@@ -834,9 +879,19 @@ function parseStage(s) {
 }
 const normTitle = s => String(s).toLowerCase().replace(/\*\*/g, "").replace(/^\W*(short|long)\W*/, "").replace(/[^a-z0-9]+/g, " ").trim();
 const cleanTitle = s => String(s).replace(/\*\*/g, "").replace(/^\s*(SHORT|LONG)\s*[-—:]*\s*/i, "").replace(/^["“]+|["”]+$/g, "").trim();
+const STOP = new Set("the and for you your are with that this from have what how why who when about after into over not but can its they them their there than then".split(" "));
+const toks = x => normTitle(x).split(" ").filter(w => w.length > 3 && !STOP.has(w));
+const ALIAS = { "four stages of infidelity recovery": "s-four-stages" };
 function matchItem(title) {
   const n = normTitle(title); if (!n) return null;
-  return allItems().find(it => normTitle(it.title) === n) || allItems().find(it => { const m = normTitle(it.title); return n.length > 12 && m.length > 12 && (m.includes(n) || n.includes(m)); }) || null;
+  const items = allItems();
+  if (ALIAS[n]) { const a = items.find(it => it.id === ALIAS[n]); if (a) return a; }
+  const exact = items.find(it => normTitle(it.title) === n); if (exact) return exact;
+  const inc = items.find(it => { const m = normTitle(it.title); return n.length > 12 && m.length > 12 && (m.includes(n) || n.includes(m)); }); if (inc) return inc;
+  const t = toks(title); if (t.length < 3) return null;
+  let best = null, bs = 0;
+  items.forEach(it => { const u = toks(it.title); if (u.length < 3) return; const sh = t.filter(w => u.includes(w)).length, sc = sh / Math.min(t.length, u.length); if (sh >= 3 && sc > bs) { bs = sc; best = it; } });
+  return bs >= 0.67 ? best : null;
 }
 function parseTable(text) {
   const rows = [];
@@ -999,12 +1054,14 @@ document.addEventListener("change", async e => {
 function renderFunnel() {
   const vs = STATE.videos, v30 = derived().viewsGain, subs = derived().subsGain;
   const likes = vs.reduce((s, v) => s + v.likes, 0), cms = vs.reduce((s, v) => s + v.comments, 0);
+  const cut30 = addDays(today(), -30);
+  const web30 = WEB ? WEB.filter(x => x.date >= cut30) : null, wlN = WAIT_ALL ? WAIT_ALL.filter(w => w.date >= cut30).length : null, sa = salesAgg();
   const steps = [
     {nm:"YouTube",val:fmt(v30),sub:`views, last 30 days · ${fmt(likes)} likes and ${fmt(cms)} comments on the last ${vs.length} videos`,src:"Live via VidIQ",on:true},
-    {nm:"Your website",val:"–",sub:"Squarespace visits, article views, waitlist page views",src:"Needs Google Analytics",on:false},
-    {nm:"Kit",val:"–",sub:"New subscribers by form and landing page",src:"Needs Kit connection",on:false},
-    (() => { const a = salesAgg(); return a ? {nm:"ThriveCart",val:String(a.n30),sub:`course orders, last 30 days · $${fmt(a.rev30)}. Checkout views are not in the sale emails.`,src:"Live from Gmail sale emails",on:true} : {nm:"ThriveCart",val:"–",sub:"Course orders and revenue from your sale emails",src:"Press Check Gmail for sales",on:false}; })(),
-    {nm:"Waitlist",val:"–",sub:"Squarespace form sign-ups",src:"Needs a GA event on the thank-you page",on:false}
+    web30 ? {nm:"Your website",val:fmt(web30.reduce((x, y) => x + y.sessions, 0)),sub:`sessions, last 30 days · ${fmt(web30.reduce((x, y) => x + y.articleViews, 0))} article views`,src:"From Google Analytics",on:true} : {nm:"Your website",val:"–",sub:"Sessions, article views, waitlist page views",src:"Set up the Analytics sheet",on:false},
+    {nm:"Kit",val:"+" + fmt(KIT.growth.n),sub:`new subscribers, last 30 days · ${fmt(KIT.growth.total)} total`,src:KIT.live ? "Live from Kit" : "Kit snapshot, Oct 22",on:true},
+    sa ? {nm:"ThriveCart",val:String(sa.n30),sub:`course orders, last 30 days · $${fmt(sa.rev30)}. Checkout views are not in the sale emails.`,src:"Live from Gmail sale emails",on:true} : {nm:"ThriveCart",val:"–",sub:"Course orders and revenue from your sale emails",src:"Press Check Gmail for sales",on:false},
+    wlN != null ? {nm:"Therapy waitlist",val:String(wlN),sub:"requests from the Squarespace form, last 30 days",src:"Live from Gmail form emails",on:true} : {nm:"Therapy waitlist",val:"–",sub:"Requests from the Squarespace form",src:"Check Gmail on the Waitlist tab",on:false}
   ];
   $("#flow").innerHTML = steps.map(s => `<div class="fstep ${s.on ? "" : "off"}"><div class="nm">${s.nm}</div><div class="val">${s.val}</div><div class="src">${s.sub}</div><div style="margin-top:8px"><span class="pill ${s.on ? "good" : ""}">${s.src}</span></div></div>`).join("");
   const rows = vs.map(v => {
@@ -1015,6 +1072,7 @@ function renderFunnel() {
   $("#utmVideo").innerHTML = vs.map(v => `<option value="${v.id}">${esc(v.title)}</option>`).join("");
   $("#utmBase").innerHTML = Object.entries(LINKS).map(([k, l]) => `<option value="${k}">${esc(l.label)}</option>`).join("");
   utm();
+  renderKit(); renderWeb();
 }
 function utm() {
   const v = STATE.videos.find(x => x.id === $("#utmVideo").value), l = LINKS[$("#utmBase").value];
@@ -1029,12 +1087,14 @@ $("#utmCopy").addEventListener("click", () => copyText($("#utmOut").textContent,
 function renderSources() {
   const rows = [
     ["YouTube data (views, likes, comments, subscribers)","Connected","good","Live through VidIQ. Press Refresh to update.","Done"],
-    ["Script queue and board","Connected","good","Scripts come from your Drive \"To Film\" folder (press Pull new scripts from Drive). Columns and dates you set are saved on this page.","Done"],
-    ["ThriveCart course sales","Connected through Gmail","good","Reads the sale emails already in your inbox. It gives orders, revenue and dates. It cannot give checkout views or which video sent the buyer.","Done"],
+    ["Script queue and board","Connected","good","Scripts come from your Drive \"To Edit\" and \"To Film\" folders. Columns and dates you set are saved on this page.","Done"],
+    ["Descript (filmed versus edited)","Connected","good","Reads your project list. A project in the \"To Edit\" folder is Filmed, needs editing. A name ending in _edited is Edited. Press Sync from Descript on the Production tab. Descript does not say whether a thumbnail or schedule exists, so the last two columns stay manual.","Done"],
+    ["Kit (subscribers, forms, broadcasts)","Connected","good","Live numbers and signup sources on the Funnel tab. Per-video attribution fills in once your pinned-comment links carry UTM tags.","Done"],
+    ["Therapy waitlist (Squarespace form emails)","Connected through Gmail","good","Reads the \"Form Submission - Join My Waitlist Form\" emails, sorts by the Illinois answer, and fills your reply. Nothing is sent from the page.","Done"],
+    ["ThriveCart course sales","Connected through Gmail","good","Reads your sale emails for orders, revenue and dates. It cannot give checkout views or which video sent the buyer.","Done"],
     ["Your Claude planning chat","Copy and paste","warn","No connector reads project chats. Use the two copy-paste buttons in Production.","Done"],
-    ["Kit (subscribers, forms, broadcasts)","Not connected","crit","Kit has an official Claude connector. Add it in claude.ai Settings, Connectors, then I can build the panel. Kit's API has account growth stats and broadcast stats. Per-form counts are not confirmed.","You: 2 minutes"],
-    ["Descript (filmed versus edited)","Not used","warn","The official Descript connector imports media, runs edits by prompt and checks job status. It cannot list your projects or say what is edited, so moving cards on the board is faster and more accurate.","None"],
-    ["Google Analytics (Squarespace traffic)","Not connected","crit","There is no Google Analytics connector on your account. Squarespace form sign-ups reach GA4 only through a thank-you page event or Google Tag Manager.","Later"],
+    ["Website traffic (Google Analytics)","Needs setup","crit","No Analytics connector exists on your account. The free route is a small Google script that fills a Sheet, which this page reads. Steps are on this tab.","You: 15 minutes"],
+    ["Search impressions (Google Search Console)","Not set up","crit","Google Analytics does not report impressions. Search Console does. It can feed the same Sheet later.","Later"],
     ["VidIQ keyword and opportunity data","Partly","warn","Available through the same connector. Not on this page yet.","Small"]
   ];
   $("#srcTbl").innerHTML = `<thead><tr><th>Source</th><th>Status</th><th>What it takes</th><th>Effort</th></tr></thead><tbody>${rows.map(r => `<tr><td>${r[0]}</td><td><span class="pill ${r[2]}">${r[1]}</span></td><td class="muted">${r[3]}</td><td>${r[4]}</td></tr>`).join("")}</tbody>`;
@@ -1094,6 +1154,279 @@ document.addEventListener("click", async e => {
   const h = e.target.closest("[data-hide]"); if (h) { const inv = h.dataset.hide; await persist("sales", inv, { hidden: !(saved.sales[inv] && saved.sales[inv].hidden) }); renderSales(); renderFunnel(); }
 });
 
+const GA_SCRIPT = "/**\n * Writes daily Google Analytics 4 numbers into a Google Sheet tab named \"ga4_daily\"\n * so Content HQ can read them. Free. Runs once a day after setup.\n *\n * Setup (about 15 minutes, once):\n * 1. Create a new Google Sheet. Extensions > Apps Script. Paste this file in.\n * 2. In Apps Script, click Services (+) and add \"Google Analytics Data API\".\n * 3. Set PROPERTY_ID below (GA4: Admin > Property settings > Property ID, digits only).\n * 4. Set WAITLIST_PATH and ARTICLE_PATH to match your site's URLs.\n * 5. Run updateGa4 once and approve the permissions. Then run installDailyTrigger once.\n * 6. Paste the Sheet's link into the Website card in Content HQ.\n *\n * This script has not been run against your account. If a step errors, send the error text.\n */\nconst PROPERTY_ID = 'PASTE_YOUR_GA4_PROPERTY_ID';\nconst WAITLIST_PATH = '/waitlist';   // any page whose path contains this counts as the waitlist page\nconst ARTICLE_PATH = '/blog';        // pages whose path starts with this count as articles\nconst DAYS = 60;\n\nfunction updateGa4() {\n  const range = [{ startDate: DAYS + 'daysAgo', endDate: 'today' }];\n  const all = run_({ dateRanges: range, dimensions: [{ name: 'date' }],\n    metrics: [{ name: 'sessions' }, { name: 'activeUsers' }, { name: 'screenPageViews' }] });\n  const waitlist = run_({ dateRanges: range, dimensions: [{ name: 'date' }], metrics: [{ name: 'screenPageViews' }],\n    dimensionFilter: { filter: { fieldName: 'pagePath', stringFilter: { matchType: 'CONTAINS', value: WAITLIST_PATH } } } });\n  const articles = run_({ dateRanges: range, dimensions: [{ name: 'date' }], metrics: [{ name: 'screenPageViews' }],\n    dimensionFilter: { filter: { fieldName: 'pagePath', stringFilter: { matchType: 'BEGINS_WITH', value: ARTICLE_PATH } } } });\n\n  const byDate = {};\n  (all.rows || []).forEach(function (r) {\n    byDate[r.dimensionValues[0].value] = [r.metricValues[0].value, r.metricValues[1].value, r.metricValues[2].value, '0', '0'];\n  });\n  (waitlist.rows || []).forEach(function (r) { const d = r.dimensionValues[0].value; if (byDate[d]) byDate[d][3] = r.metricValues[0].value; });\n  (articles.rows || []).forEach(function (r) { const d = r.dimensionValues[0].value; if (byDate[d]) byDate[d][4] = r.metricValues[0].value; });\n\n  const out = [['date', 'sessions', 'activeUsers', 'pageviews', 'waitlistPageViews', 'articleViews']];\n  Object.keys(byDate).sort().forEach(function (d) {\n    out.push([d.slice(0, 4) + '-' + d.slice(4, 6) + '-' + d.slice(6, 8)].concat(byDate[d].map(Number)));\n  });\n  const ss = SpreadsheetApp.getActiveSpreadsheet();\n  const sheet = ss.getSheetByName('ga4_daily') || ss.insertSheet('ga4_daily');\n  sheet.clearContents();\n  sheet.getRange(1, 1, out.length, out[0].length).setValues(out);\n}\n\nfunction run_(request) {\n  return AnalyticsData.Properties.runReport(request, 'properties/' + PROPERTY_ID);\n}\n\nfunction installDailyTrigger() {\n  ScriptApp.newTrigger('updateGa4').timeBased().everyDays(1).atHour(6).create();\n}\n";
+/* ============================ MCP ERROR COPY ============================ */
+const mcpMsg = (e, who) => ({ needs_reauth: `Reconnect ${who} in claude.ai Settings, Connectors.`, not_in_manifest: `${who} access was declined for this page.`, server_not_connected: `Add ${who} in claude.ai Settings, Connectors.` })[e && e.code] || `Couldn't reach ${who}. Try again in a minute.`;
+
+/* ============================ THERAPY WAITLIST (Squarespace form emails in Gmail) ============================ */
+const WL_TAG = "Waitlist: outside Illinois";
+const RES_LINES = ["first30", "shouldistay", "mistakes"].map(k => `- ${LINKS[k].label}: ${LINKS[k].url}`).join("\n");
+const WL_DEFAULTS = {
+  timeline: "",
+  il: "Hi {first},\n\nThank you so much for reaching out. I really appreciate your interest.\n\nAt this time, my caseload is completely full, but I will reach out to you as soon as an opening comes up. {timeline}\n\nThank you for your patience.\n\nWes",
+  outYes: `Hi {first},\n\nThank you so much for reaching out. I really appreciate your interest.\n\nI'm working on building out a coaching program and more courses for the future, but for now I don't have the ability to work with people who are not located in the state of Illinois. I will add you to my email list so you can be notified of future coaching programs as I create them. For now, unfortunately, I can't work with you individually.\n\nIn the meantime, these free resources may help:\n${RES_LINES}\n\nIf intrusive thoughts after betrayal are part of what you're facing, my course is here: ${LINKS.course.url}\n\nWishing you the best,\nWes`,
+  outNo: `Hi {first},\n\nThank you so much for reaching out. I really appreciate your interest.\n\nI'm working on building out a coaching program and more courses for the future, but for now I don't have the ability to work with people who are not located in the state of Illinois. If you'd like to hear about future coaching programs, you can join my email list here: https://prodigious-originator-1801.kit.com/08c0d6a73c. For now, unfortunately, I can't work with you individually.\n\nIn the meantime, these free resources may help:\n${RES_LINES}\n\nIf intrusive thoughts after betrayal are part of what you're facing, my course is here: ${LINKS.course.url}\n\nWishing you the best,\nWes`
+};
+let WAIT = null, wlFilter = "new";
+const tpls = () => ({ ...WL_DEFAULTS, ...(saved.settings.templates || {}) });
+const wlState = w => saved.waitlist[w.id] || {};
+const wlLoc = w => wlState(w).loc || (w.il === true ? "il" : w.il === false ? "out" : null);
+const firstName = n => { const f = String(n || "").trim().split(/\s+/)[0] || ""; return f ? f[0].toUpperCase() + f.slice(1) : ""; };
+function wlDraft(w) {
+  const loc = wlLoc(w); if (!loc) return "";
+  const t = tpls(), body = loc === "il" ? t.il : (w.marketing ? t.outYes : t.outNo);
+  return body.replace(/\{first\}/g, firstName(w.name) || "there").replace(/\{timeline\}/g, (t.timeline || "").trim() || "[ADD YOUR ESTIMATED TIMELINE: open Reply templates]");
+}
+function parseWaitlist(m) {
+  const body = String(m.plaintextBody || m.plaintext_body || "").split(/Sent via form submission/i)[0];
+  const f = [];
+  body.split(/\n\s*\n/).forEach(p => { const r = /^\s*\*(.+?):\*\s*([\s\S]*)$/.exec(p); if (r) f.push([r[1].trim(), r[2].replace(/\s+/g, " ").trim()]); });
+  const get = re => (f.find(x => re.test(x[0])) || [])[1] || "";
+  const emailRaw = get(/^email/i), il = get(/illinois/i);
+  return { id: m.id, date: String(m.date || "").slice(0, 10), name: get(/^name/i), email: (emailRaw.split(",")[0] || "").trim(), marketing: /accepts marketing:\s*true/i.test(emailRaw), il: /^yes/i.test(il) ? true : /^no/i.test(il) ? false : null, fields: f.filter(x => !/^(name|email)/i.test(x[0]) && !/illinois/i.test(x[0])), url: m.viewUrl || "" };
+}
+function renderWaitlist() {
+  const el = $("#wlList"); if (!el) return;
+  const all = WAIT || [];
+  const bucket = w => (wlState(w).status === "replied" ? "replied" : wlState(w).status === "skip" ? "skip" : "new");
+  const n = k => all.filter(w => bucket(w) === k).length;
+  $("#cWait").textContent = n("new"); $("#cWait").classList.toggle("alert", n("new") > 0);
+  $("#wlFilters").innerHTML = [["new", "New"], ["replied", "Replied"], ["skip", "Skipped"]].map(f => `<button class="chip" type="button" data-wf="${f[0]}" aria-pressed="${wlFilter === f[0]}">${f[1]} ${WAIT ? n(f[0]) : ""}</button>`).join("");
+  if (!WAIT) { el.innerHTML = `<div class="card muted">No requests loaded yet. Press "Check Gmail for requests". Google asks you to allow this page to read your Gmail the first time. The page only searches for Squarespace waitlist form emails from the last 90 days.</div>`; return; }
+  const list = all.filter(w => bucket(w) === wlFilter);
+  el.innerHTML = list.length ? list.map(w => {
+    const loc = wlLoc(w), draft = w.draft != null ? w.draft : wlDraft(w);
+    const locPill = loc === "il" ? `<span class="pill good">Illinois</span>` : loc === "out" ? `<span class="pill warn">Not in Illinois</span>` : `<span class="pill crit">Location unknown</span>`;
+    return `<div class="card cm" data-wid="${esc(w.id)}">
+      <header><span class="who">${esc(w.name || "(no name)")}</span>${locPill}<span class="pill ${w.marketing ? "acc" : ""}">${w.marketing ? "Opted in to updates" : "Did not opt in to updates"}</span><span class="muted mono" style="font-size:12px">${short(w.date)}${w.earlier.length ? " · also sent " + w.earlier.map(short).join(", ") : ""}</span></header>
+      <div class="muted mono" style="font-size:12.5px;overflow-wrap:anywhere">${esc(w.email)}</div>
+      ${w.fields.map(x => `<div class="body"><span class="muted" style="font-size:12px">${esc(x[0])}</span><br>${esc(x[1])}</div>`).join("")}
+      ${loc ? "" : `<div class="note">The form had no Illinois answer. Pick one to see the matching reply.</div>`}
+      <div class="row"><span class="muted" style="font-size:12px">Location</span><button class="btn small" type="button" data-wact="loc-il">Illinois</button><button class="btn small" type="button" data-wact="loc-out">Not Illinois</button></div>
+      ${loc ? `<div><label for="wd-${esc(w.id)}">Suggested reply</label><textarea id="wd-${esc(w.id)}" data-wact="draft" rows="9">${esc(draft)}</textarea></div>` : ""}
+      ${w.confirmKit ? `<div class="note">Add ${esc(w.email)} to Kit and tag them "${esc(WL_TAG)}"? Kit automations tied to that tag will run.<div class="row" style="margin-top:6px"><button class="btn small primary" type="button" data-wact="kit-go">Yes, add to Kit</button><button class="btn small" type="button" data-wact="kit-cancel">Cancel</button></div></div>` : ""}
+      <div class="row">
+        ${loc ? `<button class="btn primary small" type="button" data-wact="copy">Copy reply</button><button class="btn small" type="button" data-wact="gdraft">Create Gmail draft</button>` : ""}
+        ${loc === "out" ? `<button class="btn small" type="button" data-wact="kit" ${w.marketing && !w.kitDone ? "" : "disabled"} title="${w.marketing ? "" : "They did not tick the email-updates box"}">${w.kitDone ? "Added to Kit" : "Add to Kit list"}</button>` : ""}
+        ${w.url ? `<a class="btn small" href="${esc(w.url)}" target="_blank" rel="noopener" style="text-decoration:none;color:inherit;display:inline-flex;align-items:center">Open email</a>` : ""}
+        <button class="btn small" type="button" data-wact="${bucket(w) === "replied" ? "reopen" : "replied"}">${bucket(w) === "replied" ? "Move back" : "Mark replied"}</button>
+        ${bucket(w) === "skip" ? `<button class="btn small" type="button" data-wact="reopen">Move back</button>` : `<button class="btn small" type="button" data-wact="skip">Skip</button>`}
+        <span class="muted" style="font-size:12px" data-role="status">${w.draftUrl ? `<a href="${esc(w.draftUrl)}" target="_blank" rel="noopener">Open the draft in Gmail</a>` : ""}</span>
+      </div></div>`;
+  }).join("") : `<div class="card muted">Nothing here.</div>`;
+}
+async function loadWaitlist() {
+  const btn = $("#wlBtn"); btn.disabled = true; btn.textContent = "Checking Gmail…";
+  const mcp = await use("mcp");
+  if (!mcp) { toast("Gmail reading isn't available in this view"); btn.disabled = false; btn.textContent = "Check Gmail for requests"; return; }
+  try {
+    const r = await mcp.callTool("Gmail", "search_threads", { query: 'from:form-submission@squarespace.info subject:waitlist newer_than:90d', pageSize: 40, view: "THREAD_VIEW_MINIMAL" });
+    const threads = ((asObj(r) || {}).threads) || [], msgs = [];
+    for (let i = 0; i < threads.length; i += 4) {
+      const got = await Promise.allSettled(threads.slice(i, i + 4).map(t => mcp.callTool("Gmail", "get_thread", { threadId: t.id, messageFormat: "PLAIN_TEXT" })));
+      got.forEach(g => { if (g.status === "fulfilled") { const o = asObj(g.value); ((o && o.messages) || []).forEach(m => { if (/squarespace/i.test(m.sender || "") && /waitlist/i.test(m.subject || "")) msgs.push(m); }); } });
+    }
+    const parsed = msgs.map(parseWaitlist).filter(w => w.email).sort((a, b) => b.date.localeCompare(a.date));
+    WAIT_ALL = parsed;
+    const seen = new Map();
+    parsed.forEach(w => { const k = w.email.toLowerCase(); if (seen.has(k)) seen.get(k).earlier.push(w.date); else { w.earlier = []; seen.set(k, w); } });
+    WAIT = [...seen.values()];
+    toast(`Found ${WAIT.length} request${WAIT.length === 1 ? "" : "s"}`);
+  } catch (e) { toast(mcpMsg(e, "Gmail")); }
+  btn.disabled = false; btn.textContent = "Check Gmail for requests"; renderWaitlist(); renderFunnel();
+}
+let WAIT_ALL = null;
+async function addToKit(w) {
+  const mcp = await use("mcp"); if (!mcp) throw { code: "capability_disabled" };
+  const findTag = async () => { const o = asObj(await mcp.callTool("Kit", "list_tags", { per_page: 100 })); return ((o && o.tags) || []).find(t => t.name === WL_TAG); };
+  let tag = await findTag();
+  if (!tag) { await mcp.callTool("Kit", "create_tag", { name: WL_TAG }); tag = await findTag(); }
+  if (!tag) throw { code: "upstream_error" };
+  await mcp.callTool("Kit", "create_subscriber", { email_address: w.email, first_name: firstName(w.name) });
+  await mcp.callTool("Kit", "tag_subscriber", { tag_id: tag.id, email_address: w.email });
+}
+document.addEventListener("click", async e => {
+  if (e.target.id === "wlBtn") { loadWaitlist(); return; }
+  const f = e.target.closest("[data-wf]"); if (f) { wlFilter = f.dataset.wf; renderWaitlist(); return; }
+  if (e.target.id === "tplSave") { await persist("settings", "templates", { timeline: $("#tplTimeline").value, il: $("#tplIl").value, outYes: $("#tplOutYes").value, outNo: $("#tplOutNo").value }); renderWaitlist(); toast("Templates saved"); return; }
+  if (e.target.id === "tplReset") { await persist("settings", "templates", { ...WL_DEFAULTS, timeline: ($("#tplTimeline").value || "") }); fillTplBox(); renderWaitlist(); toast("Templates reset"); return; }
+  const b = e.target.closest("#wlList [data-wact]"); if (!b || b.tagName === "TEXTAREA") return;
+  const card = b.closest("[data-wid]"), w = (WAIT || []).find(x => x.id === card.dataset.wid), act = b.dataset.wact, ta = $("textarea", card), status = $("[data-role=status]", card);
+  if (!w) return;
+  const mark = async patch => { await persist("waitlist", w.id, { ...wlState(w), ...patch }); w.draft = null; renderWaitlist(); };
+  if (act === "loc-il") return mark({ loc: "il" });
+  if (act === "loc-out") return mark({ loc: "out" });
+  if (act === "replied") return mark({ status: "replied" });
+  if (act === "skip") return mark({ status: "skip" });
+  if (act === "reopen") return mark({ status: null });
+  if (act === "copy") { copyText(ta ? ta.value : "", "Reply copied"); return; }
+  if (act === "kit") { w.confirmKit = true; renderWaitlist(); return; }
+  if (act === "kit-cancel") { w.confirmKit = false; renderWaitlist(); return; }
+  if (act === "kit-go") {
+    b.disabled = true;
+    try { await addToKit(w); w.kitDone = true; w.confirmKit = false; toast("Added to Kit"); } catch (err) { w.confirmKit = false; toast(mcpMsg(err, "Kit")); }
+    renderWaitlist(); return;
+  }
+  if (act === "gdraft") {
+    const mcp = await use("mcp"); if (!mcp) { status.textContent = "Gmail drafts aren't available in this view."; return; }
+    b.disabled = true; status.textContent = "Creating draft…";
+    try {
+      const r = await mcp.callTool("Gmail", "create_draft", { to: [w.email], subject: "Re: Your waitlist request", body: ta.value, includeSignature: true });
+      const o = asObj(r) || {}; w.draft = ta.value; w.draftUrl = o.viewUrl || "https://mail.google.com/mail/#drafts"; renderWaitlist(); toast("Draft created. Review and send it from Gmail.");
+    } catch (err) { status.textContent = mcpMsg(err, "Gmail"); b.disabled = false; }
+  }
+});
+document.addEventListener("input", e => {
+  if (e.target.matches("#wlList textarea[data-wact=draft]")) { const w = (WAIT || []).find(x => x.id === e.target.closest("[data-wid]").dataset.wid); if (w) w.draft = e.target.value; }
+});
+function fillTplBox() { const t = tpls(); $("#tplTimeline").value = t.timeline || ""; $("#tplIl").value = t.il; $("#tplOutYes").value = t.outYes; $("#tplOutNo").value = t.outNo; }
+
+/* ============================ KIT ============================ */
+const KIT = { asOf: "2026-10-22", live: false, attr: null,
+  growth: { n: 58, cancel: 8, net: 50, total: 361 },
+  forms: [
+    {id:9077300,name:"First 30 Days Landing Page",count:275,url:"https://prodigious-originator-1801.kit.com/8bcd4f6195",created:"2026-02-11"},
+    {id:9081170,name:"Coaching Wait List",count:30,url:"https://prodigious-originator-1801.kit.com/08c0d6a73c",created:"2026-02-12"},
+    {id:9691746,name:"Creator Network",count:19,url:"https://prodigious-originator-1801.kit.com/8550b10a2a",created:"2026-07-16"},
+    {id:10067126,name:"5 Hidden Mistakes Landing Page",count:2,url:"https://prodigious-originator-1801.kit.com/5hiddenmistakes",created:"2026-10-19"},
+    {id:10078667,name:"Should I Stay Reflection Landing Page",count:1,url:"https://prodigious-originator-1801.kit.com/shouldistay",created:"2026-10-21"},
+    {id:9095386,name:"Newsletter Onboarding",count:0,url:"https://prodigious-originator-1801.kit.com/e2e3ad6f25",created:"2026-02-16"},
+    {id:3074468,name:"Newsletter site",count:0,url:"https://prodigious-originator-1801.kit.com/ce04503a21",created:"2022-03-11"}
+  ],
+  broadcasts: [
+    {id:26287143,subject:"Is this who they really are?",date:"2026-10-07",recipients:332,open:35.54,click:9.64,unsub:2},
+    {id:26119342,subject:"Closes at midnight",date:"2026-09-28",recipients:316,open:30.7,click:1.9,unsub:1},
+    {id:25938179,subject:"Last few days at $147",date:"2026-09-25",recipients:315,open:33.02,click:2.86,unsub:4},
+    {id:25938147,subject:"Here's what is actually inside",date:"2026-09-18",recipients:301,open:33.55,click:2.66,unsub:4},
+    {id:25938013,subject:"I owe you an apology",date:"2026-09-16",recipients:46,open:21.74,click:6.52,unsub:0},
+    {id:25932169,subject:"I made this for the 3am moments",date:"2026-09-16",recipients:302,open:31.46,click:3.97,unsub:2}
+  ] };
+function listBars(rows) {
+  const max = Math.max(1, ...rows.map(r => r[1]));
+  return rows.length ? rows.map(r => `<div class="vrow" style="grid-template-columns:minmax(0,1.4fr) minmax(0,1.6fr) 44px"><div class="t">${esc(r[0])}</div><div class="bar"><i style="width:${Math.max(r[1] / max * 100, 2)}%"></i></div><div class="v">${r[1]}</div></div>`).join("") : `<div class="muted" style="font-size:13px">Nothing yet.</div>`;
+}
+function renderKit() {
+  const el = $("#kitOut"); if (!el) return;
+  const g = KIT.growth;
+  $("#kitNote").textContent = KIT.live ? "Live from Kit." : "Snapshot from Oct 22, 2026. Press Refresh to pull the latest.";
+  const a = KIT.attr;
+  el.innerHTML = `<div class="grid g4" style="margin-bottom:14px">
+      <div class="card kpi"><div class="eyebrow">Subscribers</div><div class="num">${fmt(g.total)}</div></div>
+      <div class="card kpi"><div class="eyebrow">New, last 30 days</div><div class="num">${fmt(g.n)}</div><div class="sub">${g.n && STATE.daily ? (g.n / (derived().viewsGain / 1000)).toFixed(2) : "–"} per 1,000 YouTube views</div></div>
+      <div class="card kpi"><div class="eyebrow">Cancellations</div><div class="num">${fmt(g.cancel)}</div></div>
+      <div class="card kpi"><div class="eyebrow">Net growth</div><div class="num">+${fmt(g.net)}</div></div></div>
+    <div class="grid g2">
+      <div><h3 style="margin-bottom:6px">Forms and landing pages</h3><p class="muted" style="font-size:12.5px;margin-bottom:6px">Active subscribers who signed up through each one, all time.</p><div class="tblwrap"><table><thead><tr><th>Form</th><th class="r">Subscribers</th></tr></thead><tbody>${[...KIT.forms].sort((x, y) => y.count - x.count).map(f => `<tr><td><a href="${esc(f.url)}" target="_blank" rel="noopener">${esc(f.name)}</a><div class="muted mono" style="font-size:11.5px">since ${short(f.created)}</div></td><td class="r mono">${fmt(f.count)}</td></tr>`).join("")}</tbody></table></div></div>
+      <div><h3 style="margin-bottom:6px">Recent broadcasts</h3><p class="muted" style="font-size:12.5px;margin-bottom:6px">Open and click rates for your last six sends.</p><div class="tblwrap"><table><thead><tr><th>Subject</th><th class="r">Sent to</th><th class="r">Open</th><th class="r">Click</th></tr></thead><tbody>${KIT.broadcasts.map(b => `<tr><td>${esc(b.subject)}<div class="muted mono" style="font-size:11.5px">${short(b.date)}</div></td><td class="r mono">${fmt(b.recipients)}</td><td class="r mono">${b.open.toFixed(1)}%</td><td class="r mono">${b.click.toFixed(1)}%</td></tr>`).join("")}</tbody></table></div></div></div>
+    <div style="margin-top:16px"><div class="sec-head" style="margin-bottom:8px"><div><h3>Where the last 30 days of signups came from</h3><p>Kit records the referring site and UTM tags on each signup. Links without UTM tags only show a referrer.</p></div><button class="btn" id="attrBtn" type="button">Load signup sources</button></div>
+      ${a ? `<div class="grid g2" style="gap:18px"><div><div class="eyebrow" style="margin-bottom:6px">By form</div>${listBars(a.forms)}</div><div><div class="eyebrow" style="margin-bottom:6px">By referring site</div>${listBars(a.refs)}</div><div style="grid-column:1/-1"><div class="eyebrow" style="margin-bottom:6px">By YouTube video (needs a UTM-tagged link)</div>${listBars(a.videos)}<p class="muted" style="font-size:12.5px;margin-top:6px">${a.total} signups counted. ${a.tagged} had a video tag. Use the link builder below on your pinned comments so this fills in.</p></div></div>` : `<div class="muted" style="font-size:13px">Not loaded yet.</div>`}</div>`;
+}
+async function loadKit() {
+  const btn = $("#kitBtn"); btn.disabled = true; btn.textContent = "Refreshing…";
+  const mcp = await use("mcp");
+  if (!mcp) { toast("Kit isn't available in this view"); btn.disabled = false; btn.textContent = "Refresh from Kit"; return; }
+  const [gr, fo, br] = await Promise.allSettled([
+    mcp.callTool("Kit", "get_growth_stats", { starting: addDays(today(), -30), ending: today() }),
+    mcp.callTool("Kit", "list_forms", { include: ["subscriber_count"], per_page: 50 }),
+    mcp.callTool("Kit", "get_stats_for_a_list_of_broadcasts", { per_page: 6, status: "completed" })
+  ]);
+  let bad = null;
+  if (gr.status === "fulfilled") { const s = (asObj(gr.value) || {}).stats; if (s) KIT.growth = { n: s.new_subscribers, cancel: Math.abs(s.cancellations), net: s.net_new_subscribers, total: s.subscribers }; } else bad = gr.reason;
+  if (fo.status === "fulfilled") { const l = (asObj(fo.value) || {}).forms; if (Array.isArray(l)) KIT.forms = l.filter(f => !f.archived).map(f => ({ id: f.id, name: f.name, count: f.subscriber_count || 0, url: f.embed_url, created: String(f.created_at).slice(0, 10) })); } else bad = bad || fo.reason;
+  if (br.status === "fulfilled") { const l = (asObj(br.value) || {}).broadcasts; if (Array.isArray(l)) KIT.broadcasts = l.map(b => ({ id: b.id, subject: b.subject, date: String(b.send_at).slice(0, 10), recipients: b.stats.recipients, open: b.stats.open_rate, click: b.stats.click_rate, unsub: b.stats.unsubscribes })); } else bad = bad || br.reason;
+  KIT.live = !bad || KIT.live;
+  btn.disabled = false; btn.textContent = "Refresh from Kit"; renderKit(); renderFunnel(); renderInsights();
+  toast(bad ? mcpMsg(bad, "Kit") : "Updated from Kit");
+}
+async function loadAttr() {
+  const btn = $("#attrBtn"); btn.disabled = true; btn.textContent = "Loading…";
+  const mcp = await use("mcp");
+  if (!mcp) { toast("Kit isn't available in this view"); btn.disabled = false; return; }
+  try {
+    const subs = []; let after;
+    for (let i = 0; i < 3; i++) {
+      const o = asObj(await mcp.callTool("Kit", "filter_subscribers", { all: [{ type: "subscriber_state", states: ["active"] }, { type: "subscribed", after: addDays(today(), -30) }], include: [{ type: "attribution" }], per_page: 100, sort_field: "created_at", sort_order: "desc", ...(after ? { after } : {}) })) || {};
+      (o.subscribers || []).forEach(s => subs.push(s.attribution || {}));
+      if (!o.pagination || !o.pagination.has_next_page) break; after = o.pagination.end_cursor;
+    }
+    const tally = fn => { const m = new Map(); subs.forEach(a => { const k = fn(a); if (k) m.set(k, (m.get(k) || 0) + 1); }); return [...m.entries()].sort((x, y) => y[1] - x[1]).slice(0, 8); };
+    const host = a => { try { return new URL(a.referrer).hostname.replace(/^www\./, ""); } catch (e) { return "No referrer"; } };
+    const vt = id => (STATE.videos.find(v => v.id === id) || {}).title || id;
+    KIT.attr = { total: subs.length, tagged: subs.filter(a => a.utm_content).length, forms: tally(a => a.source_name || "Unknown"), refs: tally(host), videos: tally(a => a.utm_content ? vt(a.utm_content) : null) };
+  } catch (e) { toast(mcpMsg(e, "Kit")); }
+  renderKit();
+}
+document.addEventListener("click", e => { if (e.target.id === "kitBtn") loadKit(); if (e.target.id === "attrBtn") loadAttr(); });
+
+/* ============================ WEBSITE (Google Analytics through a Google Sheet) ============================ */
+let WEB = null;
+const sheetIdOf = s => (/\/d\/([a-zA-Z0-9_-]+)/.exec(s || "") || [])[1] || (/^[a-zA-Z0-9_-]{20,}$/.test((s || "").trim()) ? s.trim() : "");
+function renderWeb() {
+  const el = $("#webOut"); if (!el) return;
+  const inp = $("#sheetUrl"); if (inp && !inp.value && saved.settings.ga && saved.settings.ga.url) inp.value = saved.settings.ga.url;
+  if (!WEB) { el.innerHTML = `<div class="card muted" style="background:var(--bg)">No website data yet. Paste the link to the Google Sheet your Analytics script writes to, then press "Load website data". The setup steps and script are on the Data sources tab.</div>`; return; }
+  const cut = addDays(today(), -30), r = WEB.filter(x => x.date >= cut), sum = k => r.reduce((s, x) => s + (x[k] || 0), 0);
+  const waitSubs = WAIT_ALL ? WAIT_ALL.filter(w => w.date >= cut).length : null, wv = sum("waitlistPageViews");
+  el.innerHTML = `<div class="grid g4" style="margin-bottom:12px">
+    <div class="card kpi"><div class="eyebrow">Sessions, 30 days</div><div class="num">${fmt(sum("sessions"))}</div><div class="sub">${fmt(sum("activeUsers"))} users counted by day</div></div>
+    <div class="card kpi"><div class="eyebrow">Page views</div><div class="num">${fmt(sum("pageviews"))}</div></div>
+    <div class="card kpi"><div class="eyebrow">Article views</div><div class="num">${fmt(sum("articleViews"))}</div></div>
+    <div class="card kpi"><div class="eyebrow">Waitlist page views</div><div class="num">${fmt(wv)}</div><div class="sub">${waitSubs == null ? "Check Gmail on the Waitlist tab for sign-ups" : `${waitSubs} requests, ${wv ? (waitSubs / wv * 100).toFixed(1) + "% of views" : "no views"}`}</div></div></div>
+    <div class="chart"><div class="chart-title"><h3>Sessions per day</h3></div><div id="chWeb"></div></div>`;
+  barChart($("#chWeb"), r.map(x => x.sessions), i => short(r[i].date));
+}
+async function loadWeb() {
+  const btn = $("#webBtn"), id = sheetIdOf($("#sheetUrl").value);
+  if (!id) { toast("Paste the Google Sheet link first"); return; }
+  btn.disabled = true; btn.textContent = "Loading…";
+  const mcp = await use("mcp");
+  if (!mcp) { toast("Google Sheets isn't available in this view"); btn.disabled = false; btn.textContent = "Load website data"; return; }
+  try {
+    const o = asObj(await mcp.callTool("Google Sheets", "get_values", { spreadsheetId: id, range: "ga4_daily!A1:F400" })) || {};
+    const rows = o.values || [], h = (rows[0] || []).map(String);
+    if (!h.includes("date") || rows.length < 2) throw { code: "bad_sheet" };
+    WEB = rows.slice(1).map(r => { const x = {}; h.forEach((k, i) => { x[k] = k === "date" ? String(r[i]) : Number(r[i]) || 0; }); return x; }).filter(x => x.date);
+    await persist("settings", "ga", { url: $("#sheetUrl").value });
+  } catch (e) { toast(e.code === "bad_sheet" ? 'That sheet needs a tab named "ga4_daily" with a header row. See Data sources.' : mcpMsg(e, "Google Sheets")); }
+  btn.disabled = false; btn.textContent = "Load website data"; renderWeb(); renderFunnel();
+}
+document.addEventListener("click", e => { if (e.target.id === "webBtn") loadWeb(); if (e.target.id === "copyGa") copyText(GA_SCRIPT, "Script copied"); });
+
+/* ============================ DESCRIPT SYNC (To Edit folder and _edited names) ============================ */
+async function descriptSync() {
+  const btn = $("#descriptSync"), out = $("#syncOut"); btn.disabled = true; out.innerHTML = `<p class="muted" style="font-size:13px;margin-top:8px">Reading Descript…</p>`;
+  const mcp = await use("mcp");
+  if (!mcp) { out.innerHTML = `<p class="muted" style="font-size:13px;margin-top:8px">Descript isn't available in this view.</p>`; btn.disabled = false; return; }
+  try {
+    const projects = []; let cursor;
+    for (let i = 0; i < 3; i++) {
+      const o = asObj(await mcp.callTool("Descript", "list_projects", { limit: 100, sort: "updated_at", direction: "desc", ...(cursor ? { cursor } : {}) })) || {};
+      (o.data || []).forEach(p => projects.push(p));
+      cursor = o.pagination && o.pagination.next_cursor; if (!cursor) break;
+    }
+    const plan = [];
+    projects.forEach(p => {
+      if (/course/i.test(p.folder_path || "") || /^untitled/i.test(p.name || "")) return;
+      const edited = /_edited$|^edited[_ ]/i.test(p.name || ""), st = edited ? "ready" : "filmed";
+      const clean = (p.name || "").replace(/_edited$/i, "").replace(/^edited[_ ]*/i, "");
+      const it = matchItem(clean);
+      if (it) { const cur = itemState(it); if (cur.stage !== "published" && stageIdx(st) > stageIdx(cur.stage)) plan.push({ it, st, p, from: cur.stage }); }
+      else if (!edited && /^to edit$/i.test(p.folder_path || "")) plan.push({ it: null, st, p, title: cleanTitle(clean) });
+    });
+    window.__dsc = plan;
+    out.innerHTML = plan.length ? `<div class="plan" style="margin-top:10px"><b>${plan.filter(x => x.it).length} card${plan.filter(x => x.it).length === 1 ? "" : "s"} to move, ${plan.filter(x => !x.it).length} new</b><ul style="margin:8px 0 0;padding-left:18px;font-size:13px;display:grid;gap:3px">${plan.map(x => x.it ? `<li>${esc(x.it.title)}: ${esc(stageLabel(x.from))} → ${esc(stageLabel(x.st))}</li>` : `<li><b>New card:</b> ${esc(x.title)} (${esc(stageLabel(x.st))})</li>`).join("")}</ul><p class="muted" style="font-size:12px;margin-top:8px">Rule: a project in the "To Edit" folder is Filmed, needs editing. A name ending in _edited is Edited. Cards only move forward. Edited projects with no matching script are treated as already published and skipped.</p><div style="display:flex;gap:8px;margin-top:10px"><button class="btn primary" id="applyDsc" type="button">Apply</button></div></div>` : `<p class="muted" style="font-size:13px;margin-top:8px">Checked ${projects.length} Descript projects. Nothing to change.</p>`;
+  } catch (e) { out.innerHTML = `<p class="muted" style="font-size:13px;margin-top:8px">${esc(mcpMsg(e, "Descript"))}</p>`; }
+  btn.disabled = false;
+}
+async function applyDescript() {
+  for (const x of window.__dsc || []) {
+    if (x.it) { const cur = { ...(saved.pipeline[x.it.id] || {}), ...itemState(x.it) }; await persist("pipeline", x.it.id, { ...cur, stage: x.st, descript: true }); }
+    else await persist("pipeline", "descript-" + x.p.id, { custom: true, title: x.title, fmt: /^\s*short/i.test(x.p.name || "") ? "short" : "long", note: "Found in your Descript To Edit folder.", stage: x.st, date: null, descript: true });
+  }
+  $("#syncOut").innerHTML = ""; renderPipeline(); toast("Board updated from Descript");
+}
+document.addEventListener("click", e => { if (e.target.id === "descriptSync") descriptSync(); if (e.target.id === "applyDsc") { e.target.disabled = true; applyDescript(); } });
+
 /* ============================ LIVE REFRESH (VidIQ) ============================ */
 function decodeHtml(h) { const s = String(h || "").replace(/<br\s*\/?>/gi, "\n"); return new DOMParser().parseFromString(s, "text/html").body.textContent || ""; }
 function parseMin(iso) { const m = /PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/.exec(iso || ""); return m ? (+(m[1] || 0)) * 60 + (+(m[2] || 0)) + (+(m[3] || 0)) / 60 : 0; }
@@ -1145,7 +1478,7 @@ async function refreshLive() {
 $("#refreshBtn").addEventListener("click", refreshLive);
 
 /* ============================ TABS ============================ */
-const TABS = ["overview","pipeline","comments","funnel","sources"];
+const TABS = ["overview","pipeline","comments","waitlist","funnel","sources"];
 function showTab(k) {
   if (!TABS.includes(k)) k = "overview";
   TABS.forEach(t => { $("#p-" + t).hidden = t !== k; });
@@ -1155,7 +1488,7 @@ function showTab(k) {
 $$(".tab").forEach(b => b.addEventListener("click", () => { try { history.replaceState(null, "", "#" + b.dataset.tab); } catch (e) {} showTab(b.dataset.tab); }));
 addEventListener("hashchange", () => showTab(location.hash.slice(1)));
 
-function renderAll() { renderKpis(); renderCharts(); renderVideos(); renderInsights(); renderPipeline(); renderComments(); renderFunnel(); renderSales(); renderSources(); }
+function renderAll() { renderKpis(); renderCharts(); renderVideos(); renderInsights(); renderPipeline(); renderComments(); renderWaitlist(); renderFunnel(); renderSales(); renderSources(); fillTplBox(); }
 lsLoad();
 renderAll();
 showTab(location.hash.slice(1));
