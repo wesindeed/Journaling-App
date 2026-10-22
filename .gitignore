@@ -1,0 +1,7 @@
+# Client data NEVER goes in git. Everything the tool writes lives here.
+data/
+data-demo/
+*.local.json
+__pycache__/
+.pytest_cache/
+.venv/

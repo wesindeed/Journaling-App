@@ -1,0 +1,232 @@
+{
+  "_note": "EDIT ME. Draft rubric built from general EFT-for-couples literature (Johnson, The Practice of Emotionally Focused Couple Therapy). Replace/extend with your ICEEFT certification requirements and your supervisor's tape-review criteria. Keys are stable ids used in stored data; renaming a key orphans old scores.",
+  "score_scale": {
+    "0": "Absent, or counterproductive to the process",
+    "1": "Attempted but off-target, premature, or inconsistent",
+    "2": "Competent but shallow; missed opportunities in the transcript",
+    "3": "Solid, well-timed, responsive to the clients' process",
+    "4": "Exemplary: precise, well-timed, and it visibly moved the process"
+  },
+  "steps": {
+    "1": "Assessment: alliance, core issues",
+    "2": "Identify the negative interaction cycle",
+    "3": "Access unacknowledged emotions underlying interactional positions",
+    "4": "Reframe the problem in terms of the cycle, underlying emotions, attachment needs",
+    "5": "Promote identification with disowned needs/aspects of self; integrate into the relationship",
+    "6": "Promote acceptance of the partner's new construction of experience",
+    "7": "Facilitate expression of specific needs/wants; create emotional engagement",
+    "8": "Facilitate new solutions to old relational problems",
+    "9": "Consolidate new positions and cycles of attachment behavior"
+  },
+  "cycle_naming_levels": {
+    "0": "No cycle language in the session",
+    "1": "Therapist names the cycle; clients are passive recipients",
+    "2": "Clients acknowledge or agree when the therapist offers cycle language",
+    "3": "Clients use cycle language themselves, in their own words",
+    "4": "Clients catch the cycle in real time or report catching it at home; they externalize it ('it's our dance, not you')"
+  },
+  "block_types": {
+    "withdrawer_not_engaged": "Withdrawer stays in secondary/defensive position; not accessing or sharing underlying emotion",
+    "blame_persisting": "Blamer/pursuer remains in critical, reactive position; softening not yet accessible",
+    "secondary_emotion_dominant": "Session stays in secondary reactive emotion (anger, frustration, shutdown) without reaching primary emotion",
+    "cycle_not_tracked": "Couple cannot step back and see the cycle; stays in content/the latest fight",
+    "content_focus": "Session is pulled into content/problem-solving rather than process",
+    "safety_or_trust": "Fear, lack of safety, or unresolved injury is blocking engagement (incl. a need to screen for violence or coercion)",
+    "attachment_injury": "An attachment injury is surfacing and blocking forward movement",
+    "alliance_imbalance": "Alliance with one partner is weaker, or the therapist is aligned with one partner",
+    "therapist_pacing_ahead": "Therapist moves to the next step (e.g. enactment) before the clients are ready",
+    "external_stressor": "Outside stressors are crowding out the work",
+    "other": "None of the above"
+  },
+  "skills": [
+    {
+      "key": "tracking_reflecting",
+      "name": "Tracking & reflecting process",
+      "group": "Foundation",
+      "text_visibility": "high",
+      "description": "Moment-to-moment tracking of what is happening in the room and in the interaction, and reflecting it back in simple, concrete, present-tense language.",
+      "look_for": ["Short reflections that stay with the client's words/images", "Reflecting the interaction, not just the content ('so when she goes quiet, you reach harder')", "Not over-explaining or lecturing"]
+    },
+    {
+      "key": "validation",
+      "name": "Validation",
+      "group": "Foundation",
+      "text_visibility": "high",
+      "description": "Normalizing and legitimizing each partner's experience and their position in the cycle, without agreeing with their blame of the other.",
+      "look_for": ["Validation of the emotion/need underneath, not of the content", "Both partners validated, balanced across the session", "Validation used to build safety before deepening"]
+    },
+    {
+      "key": "alliance_safety",
+      "name": "Alliance & safety (both partners)",
+      "group": "Foundation",
+      "text_visibility": "medium",
+      "description": "Maintaining an even alliance with both partners, and a sense of safety, and repairing ruptures.",
+      "look_for": ["Even attention and airtime to both partners", "Noticing and repairing a partner who feels sided against", "Responding to signs of unsafety rather than pushing ahead"]
+    },
+    {
+      "key": "cycle_reframing",
+      "name": "Cycle reframing (the cycle is the enemy)",
+      "group": "Core moves",
+      "text_visibility": "high",
+      "description": "Repeatedly framing the negative interaction cycle, rather than either partner, as the problem; linking behaviors to underlying emotion and attachment needs.",
+      "look_for": ["Naming the cycle in the clients' own language", "Linking each partner's position to the other's ('you each protect...')", "Returning to the cycle when the session drifts to content"]
+    },
+    {
+      "key": "evocative_responding",
+      "name": "Evocative responding",
+      "group": "Core moves",
+      "text_visibility": "medium",
+      "description": "Open, tentative questions and responses that invite the client into the felt, implicit edge of their experience ('what happens right then, inside?').",
+      "look_for": ["Questions about felt experience/process, not 'why' or information-gathering", "Following the client's pace and cues", "Evoking images, bodily/felt sense, and meaning"]
+    },
+    {
+      "key": "emotional_deepening",
+      "name": "Deepening emotion",
+      "group": "Core moves",
+      "text_visibility": "medium",
+      "focus_block": true,
+      "description": "Staying with an emotion until it moves from secondary/reactive to primary and felt in the present, before moving on.",
+      "look_for": ["Staying with a moment through 2-3+ turns instead of moving on", "Client language shifting from content/explanation to present-tense, first-person felt experience", "Therapist slows down, uses simple language and repetition, tolerates silence/pauses (text proxy only)", "Therapist does NOT rescue, reassure, or pivot to the partner as soon as emotion appears"]
+    },
+    {
+      "key": "heightening",
+      "name": "Heightening",
+      "group": "Core moves",
+      "text_visibility": "medium",
+      "description": "Using repetition, images, simple evocative language and the here-and-now to intensify a key emotional moment so it can be experienced and shared.",
+      "look_for": ["Repeating the client's key phrase/image", "Making a significant moment bigger and slower", "Asking client to say it directly, or to stay with it"]
+    },
+    {
+      "key": "empathic_conjecture",
+      "name": "Empathic conjecture",
+      "group": "Core moves",
+      "text_visibility": "medium",
+      "description": "Tentative, attuned inferences that move one step beyond what the client has said, checked against their experience.",
+      "look_for": ["Offered tentatively ('I wonder if...', 'could it be...')", "Grounded in what the client has just shown", "Checks fit and adjusts when the client corrects it"]
+    },
+    {
+      "key": "enactment_timing",
+      "name": "Enactment readiness & timing",
+      "group": "Enactments",
+      "text_visibility": "medium",
+      "focus_block": true,
+      "description": "Launching an enactment (a client speaking to their partner from a new, more vulnerable place) when the speaker is in contact with primary emotion and the partner is able to receive, neither too early nor after the window has closed.",
+      "look_for": ["Primary emotion is felt and present BEFORE the invitation to turn to the partner", "Partner is not so reactive that the enactment will be hijacked", "The therapist waits for the moment rather than launching to 'do the intervention'"]
+    },
+    {
+      "key": "enactment_facilitation",
+      "name": "Enactment facilitation",
+      "group": "Enactments",
+      "text_visibility": "medium",
+      "description": "Setting up the enactment, coaching it live, keeping partners in contact, and processing it afterwards, including how the receiving partner experienced it.",
+      "look_for": ["Clear, simple invitation to speak directly to the partner", "Coaching in the moment without taking over", "Processing the receiver's response and the speaker's experience after"]
+    },
+    {
+      "key": "stage_pacing",
+      "name": "Stage-appropriate pacing",
+      "group": "Process",
+      "text_visibility": "medium",
+      "focus_block": true,
+      "description": "Matching interventions to where the couple actually is in the 9 steps (e.g. consolidating de-escalation in Stage 1 before restructuring in Stage 2).",
+      "look_for": ["Interventions consistent with the stage the clients' process supports", "No Stage 2 moves (e.g. vulnerable-need enactments) while the cycle is still running the session", "Evidence of de-escalation before restructuring"]
+    },
+    {
+      "key": "pacing_presence",
+      "name": "Pacing & presence (text proxy)",
+      "group": "Process",
+      "text_visibility": "low",
+      "description": "Slow, rhythmic, attuned pacing and presence. A transcript cannot show voice tone, tempo, or silence, so this is a weak proxy built from turn length, density, and wording. Treat as low-confidence; review on video.",
+      "look_for": ["Short therapist turns during emotional moments", "Absence of rapid-fire questions", "Absence of lecturing / psychoeducation in emotional moments"]
+    }
+  ],
+  "drills": {
+    "emotional_deepening": [
+      {
+        "title": "The 3-Turn Stay",
+        "minutes": 10,
+        "steps": [
+          "Pick a past session transcript and find 3 moments where emotion appeared.",
+          "For each, write your actual next sentence, then rewrite it so you stay with the emotion for 3 turns: reflect, evocative question, heighten (repeat their words, slower).",
+          "Say the three rewrites out loud at half speed.",
+          "In your next session, set a private rule: when real emotion appears, make 3 turns before changing direction."
+        ],
+        "reflection": "What did I want to do instead of staying? (reassure, explain, turn to partner, relieve my own discomfort?)"
+      },
+      {
+        "title": "Readiness Checklist before you say 'Can you tell her that?'",
+        "minutes": 5,
+        "steps": [
+          "Before any enactment invitation, silently check: (1) Is the emotion present-tense and first-person right now? (2) Has the pace slowed? (3) Can the partner receive it right now? (4) Am I inviting because it's ripe, or because I'm anxious about the moment passing?",
+          "If any answer is no, make one more deepening move first.",
+          "Afterwards note yes/no on each item and compare with how the enactment went."
+        ],
+        "reflection": "Which check do I skip most often?"
+      }
+    ],
+    "enactment_timing": [
+      {
+        "title": "Enactment Autopsy",
+        "minutes": 15,
+        "steps": [
+          "Pull every enactment attempt from your last 3 sessions.",
+          "For each: write what the speaker's emotion was in the 3 turns BEFORE the invitation (primary / secondary / unclear).",
+          "Mark: premature, ripe, or late. Bring the premature and late ones to supervision.",
+          "Write the 'one more move' you could have made on each premature one."
+        ],
+        "reflection": "Is my pattern early (anxious to get there) or late (hesitant to ask)?"
+      }
+    ],
+    "stage_pacing": [
+      {
+        "title": "Blind Step Call",
+        "minutes": 5,
+        "steps": [
+          "Right after each session, BEFORE looking at any analysis, write your step (1-9) and 2 pieces of evidence for it.",
+          "Write one piece of evidence for the step BELOW yours.",
+          "Log it with `--my-step`. Compare to the analysis and supervisor over time."
+        ],
+        "reflection": "Which evidence do I over-weight: hopeful moments, one softer remark, or the couple's report of a good week?"
+      },
+      {
+        "title": "Stage 1 Exit Criteria",
+        "minutes": 15,
+        "steps": [
+          "Write your own criteria for 'Stage 1 is done' for a specific couple (e.g. cycle can be named by both, escalations de-escalate faster, both can access some underlying emotion).",
+          "Bring to supervision and revise.",
+          "Check each new session against that list before calling it Stage 2."
+        ],
+        "reflection": "Which criterion do I tend to credit too early?"
+      }
+    ],
+    "cycle_reframing": [
+      {
+        "title": "Name It In Their Words",
+        "minutes": 10,
+        "steps": [
+          "From a transcript, pull each partner's own phrases for what they do ('I shut down', 'I go after her', 'I check out').",
+          "Combine them into a 3-sentence cycle description using only their words, ending with the cycle as the problem.",
+          "Practice saying it aloud and inviting 'does that fit?' rather than telling.",
+          "Next session, introduce it early and check the fit before the first escalation."
+        ],
+        "reflection": "Do I describe the cycle in my words or theirs?"
+      },
+      {
+        "title": "Catch It Live",
+        "minutes": 10,
+        "steps": [
+          "Plan a session moment where you'll interrupt a mini-escalation and say, 'This is it, this is the dance, right now.' Script it in 2 sentences.",
+          "After the session, note whether either partner used the cycle word unprompted."
+        ],
+        "reflection": "Where in the session does naming the cycle feel risky for me? Why?"
+      }
+    ],
+    "tracking_reflecting": [{"title": "Reflect, Don't Explain", "minutes": 10, "steps": ["Take 10 of your longest turns from a transcript.", "Rewrite each as one short present-tense reflection of the process.", "Count words before/after; aim for less than half."], "reflection": "What am I protecting by explaining?"}],
+    "validation": [{"title": "Validate The Underneath", "minutes": 10, "steps": ["Pick 5 times a partner blamed or defended.", "Write a validation of the emotion/need under the blame without endorsing the content.", "Check you did both partners equally."], "reflection": "Which partner do I validate more easily?"}],
+    "alliance_safety": [{"title": "Airtime & Repair Audit", "minutes": 10, "steps": ["Compare words and validations per partner from the dashboard talk stats.", "Find a moment where one partner may have felt sided against and script the repair."], "reflection": "Who do I lean toward when I'm anxious?"}],
+    "evocative_responding": [{"title": "Questions About The Edge", "minutes": 10, "steps": ["Collect 10 of your questions from a transcript. Mark which ask 'why' or gather information.", "Rewrite each to ask about the felt moment ('what happens inside as you say that?')."], "reflection": "Which questions am I asking to feel more in control?"}],
+    "heightening": [{"title": "Slow, Repeat, Image", "minutes": 10, "steps": ["Find 3 key phrases a client said once and moved on from.", "Write three heightening moves for each: repeat it, slow it, offer an image.", "Practice with a colleague role-play if possible."], "reflection": "What happens in me when a moment gets intense?"}],
+    "empathic_conjecture": [{"title": "Tentative Leaps", "minutes": 10, "steps": ["From 5 moments, write a conjecture one step beyond what was said, in tentative form.", "Write how you'd respond if the client says 'no, not quite'."], "reflection": "Am I too cautious or too certain?"}],
+    "enactment_facilitation": [{"title": "Enactment Script", "minutes": 10, "steps": ["Write a 2-sentence invitation, a coaching line for when the speaker stalls, and a processing question for the receiver.", "Rehearse out loud."], "reflection": "Do I process the receiving partner as much as the speaker?"}],
+    "pacing_presence": [{"title": "Watch The Tape At Half Speed", "minutes": 15, "steps": ["Watch 5 minutes of your session video at 0.75x with sound.", "Note where your tempo rises, where you fill silence, where you slow down well.", "Choose one pacing cue for next session."], "reflection": "What does my voice do when I'm unsure?"}]
+  }
+}
