@@ -48,7 +48,10 @@ def cmd_add(a) -> int:
     if not text.strip():
         print("empty transcript", file=sys.stderr)
         return 2
-    d = a.date or date.today().isoformat()
+    header, text = transcript.split_granola_header(text)
+    if header:
+        print("  Granola header detected and dropped (the title usually names the clients).")
+    d = a.date or transcript.parse_header_date(header.get("date")) or date.today().isoformat()
     n = store.next_number(case)
     sid = store.session_id(case, d, n)
     my_step = a.my_step
@@ -136,6 +139,53 @@ def cmd_supervisor(a) -> int:
     return 0
 
 
+def _supervision_text(sess: dict, path: str | None) -> str:
+    text = _read_text(path)
+    reg = store.load_cases().get(sess["case"], {})
+    return deidentify.scrub(text, reg.get("scrub", {}))
+
+
+def cmd_supervision(a) -> int:
+    """Turn a transcript of a supervision session into structured feedback on one session."""
+    sess = store.load_session(a.session)
+    rubric = store.load_rubric()
+    text = _supervision_text(sess, a.file)
+    hint = (f"Case {sess['case']}, session #{sess['number']}, dated {sess['date']}. "
+            "The supervisor may call it 'the couple', by a first name, or by day of the week.")
+    prompt = prompts.build_supervision_prompt(rubric, text, hint)
+    if a.out:
+        open(a.out, "w", encoding="utf-8").write(prompts.SUPERVISION_SYSTEM + "\n\n---\n\n" + prompt)
+        print(f"wrote {a.out}. Paste into Claude, save the JSON reply, then: supervision-import {sess['id']} reply.json")
+        return 0
+    if not a.yes:
+        print(PRIVACY_NOTICE)
+        if input("Send to the API? [y/N] ").strip().lower() != "y":
+            return 1
+    try:
+        raw = scoring.score_supervision_with_api(prompt, a.model)
+    except scoring.ScoreError as e:
+        print(f"FAILED - {e}", file=sys.stderr)
+        return 1
+    return _store_supervision(sess, raw, rubric)
+
+
+def _store_supervision(sess: dict, raw: dict, rubric: dict) -> int:
+    sess["supervision"] = scoring.validate_supervision(raw, rubric)
+    store.save_session(sess)
+    sv = sess["supervision"]
+    print(f"stored {len(sv['skill_signals'])} skill signals, {len(sv['stage_comments'])} stage comments for {sess['id']}")
+    for c in sv["stage_comments"]:
+        print(f"  stage comment: step={c['step']} stage={c.get('stage')}  \"{c['quote']}\"")
+    if sv["stage_comments"]:
+        print(f"  If the supervisor gave a step call, record it yourself: supervisor {sess['id']} --step N")
+    return 0
+
+
+def cmd_supervision_import(a) -> int:
+    sess = store.load_session(a.session)
+    return _store_supervision(sess, scoring.extract_json(_read_text(a.file)), store.load_rubric())
+
+
 def cmd_practice(a) -> int:
     keys = {s["key"] for s in store.load_rubric()["skills"]}
     if a.skill not in keys:
@@ -221,6 +271,13 @@ def main(argv=None) -> int:
     s = sp.add_parser("supervisor", help="record your supervisor's ratings for a session (calibrates the scorer)")
     s.add_argument("session"); s.add_argument("--step", type=int, choices=range(1, 10)); s.add_argument("--stage", type=int, choices=(1, 2, 3))  # noqa: E702
     s.add_argument("--skill", action="append", metavar="key=0..4"); s.add_argument("--notes"); s.set_defaults(fn=cmd_supervisor)  # noqa: E702
+
+    s = sp.add_parser("supervision", help="extract your supervisor's feedback on a session from a supervision transcript")
+    s.add_argument("session"); s.add_argument("--file", help="supervision transcript; omit for stdin")  # noqa: E702
+    s.add_argument("--out", help="manual mode: write the prompt here instead of calling the API")
+    s.add_argument("--model"); s.add_argument("--yes", action="store_true"); s.set_defaults(fn=cmd_supervision)  # noqa: E702
+    s = sp.add_parser("supervision-import", help="manual mode: import Claude's extraction JSON")
+    s.add_argument("session"); s.add_argument("file", nargs="?"); s.set_defaults(fn=cmd_supervision_import)  # noqa: E702
 
     s = sp.add_parser("practice", help="log a deliberate-practice rep")
     s.add_argument("skill"); s.add_argument("--minutes", type=int, default=10); s.add_argument("--note"); s.add_argument("--date")  # noqa: E702

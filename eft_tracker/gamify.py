@@ -111,11 +111,32 @@ def scorer_trust(sessions: list[dict], rubric: dict) -> dict:
             stage_n += 1
             stage_hits += reference_stage(s)["stage"] == s["analysis"]["stage_assessment"]["stage"]
     names = {x["key"]: x["name"] for x in rubric["skills"]}
-    return {"calibrated_sessions": len([s for s in sessions if s.get("supervisor")]),
+    return {"direction": direction_agreement(sessions),
+            "calibrated_sessions": len([s for s in sessions if s.get("supervisor")]),
             "n_ratings": len(diffs), "mae": round(mean(diffs), 2) if diffs else None,
             "stage_agreement": round(stage_hits / stage_n, 2) if stage_n else None, "stage_n": stage_n,
             "per_skill": [{"key": k, "name": names.get(k, k), "mean_diff": round(mean(v), 2), "n": len(v)}
                           for k, v in sorted(per_skill.items())]}
+
+
+def direction_agreement(sessions: list[dict]) -> dict:
+    """Does the scorer agree in DIRECTION with what the supervisor said in supervision?
+    growth_edge agrees if the scorer gave that skill <=2 or listed it among its growth edges;
+    strength agrees if the scorer gave it >=3. Much weaker than numeric ratings, but needs none."""
+    hits = n = 0
+    rows = []
+    for s in scored(sessions):
+        for sig in (s.get("supervision") or {}).get("skill_signals", []):
+            m = s["analysis"]["skills"].get(sig["skill"])
+            if not m or not m.get("assessable", True):
+                continue
+            edge = m["score"] <= 2 or sig["skill"] in s["analysis"].get("growth_edges", [])
+            ok = edge if sig["signal"] == "growth_edge" else m["score"] >= 3
+            n += 1
+            hits += ok
+            rows.append({"session": s["id"], "skill": sig["skill"], "supervisor": sig["signal"], "scorer": m["score"], "agree": ok})
+    return {"n": n, "agree": hits, "rate": round(hits / n, 2) if n else None, "rows": rows,
+            "sessions": len([s for s in sessions if s.get("supervision")])}
 
 
 def iso_week(d: date) -> tuple[int, int]:
@@ -248,7 +269,7 @@ def build_dashboard_data(sessions: list[dict], practice: list[dict], rubric: dic
     sess_out = []
     for s in sessions:
         sess_out.append({k: s.get(k) for k in ("id", "case", "date", "number", "status", "my_stage", "my_step", "my_block",
-                                                "talk_stats", "supervisor", "analysis", "scoring")})
+                                                "talk_stats", "supervisor", "supervision", "analysis", "scoring")})
     return {
         "generated": datetime.now().isoformat(timespec="minutes"),
         "level": level_for(ledger["total"]), "xp": ledger,

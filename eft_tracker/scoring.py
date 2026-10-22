@@ -125,7 +125,7 @@ def apply_analysis(sess: dict, raw: dict, rubric: dict, transcript: str, model: 
     return sess
 
 
-def call_model(user_prompt: str, model: str | None = None, client=None) -> tuple[str, str]:
+def call_model(user_prompt: str, model: str | None = None, client=None, system: str | None = None) -> tuple[str, str]:
     """One streamed request. Returns (text, model_used). Raises ScoreError on refusal/truncation."""
     model = model or os.environ.get("EFT_MODEL", DEFAULT_MODEL)
     if client is None:
@@ -137,7 +137,7 @@ def call_model(user_prompt: str, model: str | None = None, client=None) -> tuple
     with client.messages.stream(
         model=model,
         max_tokens=MAX_TOKENS,
-        system=prompts.SYSTEM,
+        system=system or prompts.SYSTEM,
         output_config={"effort": "high"},
         messages=[{"role": "user", "content": user_prompt}],
     ) as stream:
@@ -162,3 +162,28 @@ def score_with_api(sess: dict, transcript_seen: str, rubric: dict,
             last = e
             prompt += f"\n\n(Your previous output was rejected: {e}. Return the complete corrected JSON object only.)"
     raise ScoreError(f"model output failed validation after {retries + 1} attempts: {last}")
+
+
+def validate_supervision(notes: dict, rubric: dict) -> dict:
+    """Keep only well-formed, quote-backed items with known skill keys."""
+    keys = {s["key"] for s in rubric["skills"]}
+    out = {"scope_note": str(notes.get("scope_note", ""))}
+    out["skill_signals"] = [
+        {"skill": x["skill"], "signal": x["signal"], "quote": x["quote"],
+         "strength_of_statement": x.get("strength_of_statement", "implied")}
+        for x in notes.get("skill_signals") or []
+        if isinstance(x, dict) and x.get("skill") in keys and x.get("signal") in ("strength", "growth_edge") and x.get("quote")
+    ]
+    out["stage_comments"] = [x for x in notes.get("stage_comments") or [] if isinstance(x, dict) and x.get("quote")]
+    for x in out["stage_comments"]:
+        step = x.get("step")
+        x["step"] = int(step) if isinstance(step, (int, float)) and 1 <= step <= 9 else None
+    for k in ("block_comments", "other_feedback"):
+        out[k] = [x for x in notes.get(k) or [] if isinstance(x, dict) and x.get("quote")]
+    out["assignments"] = [str(x) for x in notes.get("assignments") or []]
+    return out
+
+
+def score_supervision_with_api(prompt: str, model: str | None = None, client=None) -> dict:
+    text, _ = call_model(prompt, model, client, system=prompts.SUPERVISION_SYSTEM)
+    return extract_json(text)

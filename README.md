@@ -46,6 +46,29 @@ python -m eft_tracker supervisor AB_2026-10-20_01 --step 3 --skill emotional_dee
 python -m eft_tracker practice emotional_deepening --minutes 15 --note "3-Turn Stay on session 4"
 ```
 
+### Supervision transcripts (no numeric ratings needed)
+
+If your supervisor gives comments rather than scores, feed the supervision-session transcript in:
+
+```bash
+python -m eft_tracker supervision AB_2026-10-20_01 --file supervision.txt --out prompt.txt   # manual mode
+python -m eft_tracker supervision-import AB_2026-10-20_01 reply.json
+#   or API mode: omit --out
+```
+
+It extracts only what the supervisor actually said (quote-backed strengths, growth edges, stage comments,
+assignments). The Trust panel then reports **direction agreement**: did the scorer rate as a growth edge what your
+supervisor called one? That is much weaker than numeric ratings. If the supervisor gives a step call, record it with
+`supervisor --step N`.
+
+### Granola format notes
+
+`add` strips Granola's `Meeting Title / Date / Participants / Transcript:` header (the title usually names the
+clients) and uses its date if you don't pass `--date`. Granola labels you `Me` and everyone else `Them`, so **both
+partners arrive merged**: the tool can measure your talk share but not per-partner airtime, and the scorer is told to
+infer who is speaking from context. Speech recognition garbles names; register each variant you see
+(`--scrub "Garen=Friend" --scrub "Garrett=Friend"`).
+
 ## What it tracks
 
 - **12 EFT skills**, scored 0-4 with verbatim evidence quotes (`eft_tracker/rubric.json`).

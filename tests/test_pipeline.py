@@ -197,3 +197,90 @@ def test_dashboard_embeds_data_safely(tmp_path):
 def test_empty_dashboard_renders(tmp_path):
     assert cli.main(["dashboard", "--out", str(tmp_path / "d.html")]) == 0
     assert (tmp_path / "d.html").read_text().startswith("<!doctype html>")
+
+
+GRANOLA = """Meeting Title: Relationship stuff with Alex and Jo
+Date: Oct 21
+Meeting participants: Wes White
+
+Transcript:
+Them: Hi. How's it going? Good.
+Me: Good, good. How were the last two weeks?
+Them: Busy. We both traveled. Alex was gone, then Jo was.
+Me: Mm-hmm.
+Them: And then we had a tense moment about dinner yesterday.
+Me: What was that like for you?
+Them: Hard. I felt shut out.
+Me: Yeah.
+"""
+
+
+def test_granola_header_is_split_and_not_parsed_as_speakers():
+    hdr, body = transcript.split_granola_header(GRANOLA)
+    assert hdr["date"] == "Oct 21" and "Meeting Title" not in body and body.startswith("Them: Hi")
+    st = transcript.talk_stats(body)
+    assert st["client_speakers"] == ["Them"] and st["partner_attribution"] == "merged"
+    assert transcript.split_granola_header("Me: hi\nThem: yo") == ({}, "Me: hi\nThem: yo")
+
+
+def test_header_date_parsing_never_lands_in_future():
+    from datetime import date
+    today = date(2026, 10, 22)
+    assert transcript.parse_header_date("Oct 21", today) == "2026-10-21"
+    assert transcript.parse_header_date("Dec 30", today) == "2025-12-30"
+    assert transcript.parse_header_date("2026-09-01", today) == "2026-09-01"
+    assert transcript.parse_header_date("someday", today) is None
+
+
+def test_add_drops_granola_title_uses_its_date_and_flags_merged_speakers(tmp_path):
+    f = tmp_path / "g.txt"
+    f.write_text(GRANOLA)
+    assert cli.main(["add", "AB", "--file", str(f), "--therapist-label", "Me"]) == 0
+    sid = [s["id"] for s in store.all_sessions()][0]
+    sess = store.load_session(sid)
+    assert sess["date"].endswith("-10-21")
+    assert "Alex and Jo" not in store.transcript_path(sid).read_text()
+    from eft_tracker import prompts
+    p = prompts.build_user_prompt(store.load_rubric(), "x", sess)
+    assert "merged under one label" in p
+
+
+def test_supervision_extraction_is_validated_and_direction_agreement_computed(tmp_path):
+    rub = store.load_rubric()
+    sid = add(tmp_path)
+    s = store.load_session(sid)
+    s["analysis"] = scoring.validate(fake_analysis(rub), rub)
+    s["analysis"]["skills"]["validation"]["score"] = 3
+    s["analysis"]["skills"]["emotional_deepening"]["score"] = 2
+    s["analysis"]["skills"]["heightening"]["score"] = 3
+    s["analysis"]["growth_edges"] = []
+    s["status"] = "scored"
+    store.save_session(s)
+    reply = tmp_path / "sv.json"
+    reply.write_text(json.dumps({
+        "scope_note": "clear",
+        "skill_signals": [
+            {"skill": "validation", "signal": "strength", "quote": "your validation was lovely"},
+            {"skill": "emotional_deepening", "signal": "growth_edge", "quote": "stay with it longer"},
+            {"skill": "heightening", "signal": "growth_edge", "quote": "you could have heightened more"},
+            {"skill": "not_a_skill", "signal": "strength", "quote": "x"},
+            {"skill": "validation", "signal": "strength", "quote": ""},
+        ],
+        "stage_comments": [{"step": 11, "quote": "I'd call it stage two"}],
+        "assignments": ["three-turn stay"]}))
+    assert cli.main(["supervision-import", sid, str(reply)]) == 0
+    s = store.load_session(sid)
+    assert len(s["supervision"]["skill_signals"]) == 3  # unknown skill and quote-less item dropped
+    assert s["supervision"]["stage_comments"][0]["step"] is None  # out-of-range step discarded
+    d = gamify.direction_agreement(store.all_sessions())
+    assert d["n"] == 3 and d["agree"] == 2  # heightening scored 3, so a 'growth edge' comment disagrees
+
+
+def test_supervision_manual_prompt_is_scrubbed(tmp_path):
+    sid = add(tmp_path)
+    f = tmp_path / "sup.txt"
+    f.write_text("Me: I'm stuck with Jane and John.\nSupervisor: Stay with it longer.")
+    out = tmp_path / "p.txt"
+    assert cli.main(["supervision", sid, "--file", str(f), "--out", str(out)]) == 0
+    text = out.read_text()
+    assert "Jane" not in text and "Partner A" in text

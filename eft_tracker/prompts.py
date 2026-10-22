@@ -12,6 +12,8 @@ Ground rules:
 - Clients are identified only as Partner A / Partner B or by the labels in the transcript. Do not guess gender or identity.
 - The therapist has asked for a rigorous read of three things in particular: (1) whether emotion was actually deepened before any enactment, (2) which EFT step the couple is really at and whether the therapist's own estimate is too advanced, and (3) whether and how the cycle was named by the clients.
 - Your stage/step call is an independent estimate from the words alone, not a deference to the therapist's estimate. If you disagree with the therapist's estimate, say so plainly and explain with evidence.
+- The transcript is machine-generated. It contains recognition errors (misheard words, garbled names, odd punctuation). Do not treat a garbled phrase as evidence of anything, and do not quote garbled text as evidence unless it is clearly intelligible.
+- Speaker labels can be coarse. If the transcript labels everyone except the therapist as one speaker (e.g. "Them"), that stream mixes BOTH partners, sometimes within one block. Infer who is speaking from context (names used, who is addressed, content). When attribution is uncertain, say so in your notes and do not assign the quote to a specific partner.
 - You are producing a screening aid for supervision, not a clinical determination. Flag uncertainty."""
 
 OUTPUT_SPEC = """Return ONE JSON object and nothing else (no prose, no markdown fences) with exactly these keys:
@@ -85,6 +87,8 @@ def build_user_prompt(rubric: dict, transcript: str, meta: dict) -> str:
         my.append(f"Therapist's own hypothesis about what is blocking the couple: {meta['my_block']}")
     if meta.get("notes"):
         my.append(f"Therapist's notes: {meta['notes']}")
+    if (meta.get("talk_stats") or {}).get("partner_attribution") == "merged":
+        my.append("Transcript note: the therapist is labelled 'Me'; both partners are merged under one label. Infer the speaker from context.")
     ctx = "\n".join(my) or "(none supplied)"
     return (
         f"## Session\nCase: {meta['case']}  |  Session #{meta['number']}  |  Date: {meta['date']}\n\n"
@@ -97,3 +101,34 @@ def build_user_prompt(rubric: dict, transcript: str, meta: dict) -> str:
         f"## Output format\n{OUTPUT_SPEC}\n\n"
         f"## Transcript\n<transcript>\n{transcript}\n</transcript>"
     )
+
+
+SUPERVISION_SYSTEM = """You extract an EFT supervisor's feedback from a transcript of a supervision session. Return JSON only.
+
+Rules:
+- Record ONLY what the supervisor actually said or clearly implied about the therapist's work in the session being discussed. Do not add your own opinions, and do not infer a rating the supervisor did not give.
+- Every item needs a short VERBATIM quote from the supervision transcript (max ~25 words). If you cannot quote it, leave it out.
+- The transcript is machine-generated and may contain recognition errors; ignore garbled text.
+- If the supervisor discusses several sessions or couples, include only the one described in the session hint, and say in `scope_note` how confident you are that the feedback concerns that session.
+- Use only skill keys from the rubric list. If feedback does not map to a skill, put it in `other_feedback`."""
+
+SUPERVISION_SPEC = """Return ONE JSON object and nothing else:
+
+{
+  "scope_note": "<which session/couple the feedback appears to concern and how sure you are>",
+  "skill_signals": [
+    {"skill": "<skill_key>", "signal": "<strength|growth_edge>", "quote": "<verbatim>", "strength_of_statement": "<explicit|implied>"}
+  ],
+  "stage_comments": [
+    {"step": <integer 1-9 or null>, "stage": <1|2|3 or null>, "quote": "<verbatim>", "about": "<the couple's process, or the therapist's own call>"}
+  ],
+  "block_comments": [{"comment": "<what the supervisor thinks is blocking the couple>", "quote": "<verbatim>"}],
+  "assignments": ["<practice or homework the supervisor assigned>"],
+  "other_feedback": [{"comment": "<short>", "quote": "<verbatim>"}]
+}"""
+
+
+def build_supervision_prompt(rubric: dict, supervision_text: str, session_hint: str) -> str:
+    skills = [{"key": s["key"], "name": s["name"], "description": s["description"]} for s in rubric["skills"]]
+    return (f"## Session the supervision concerns\n{session_hint}\n\n## Skill keys\n{json.dumps(skills)}\n\n"
+            f"## Output format\n{SUPERVISION_SPEC}\n\n## Supervision transcript\n<supervision>\n{supervision_text}\n</supervision>")

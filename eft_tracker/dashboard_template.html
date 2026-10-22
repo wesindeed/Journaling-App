@@ -280,6 +280,8 @@ D.badges.forEach(b=>$("badges").append(h("div",{class:"bd"+(b.earned?"":" off")}
 /* ---------- trust ---------- */
 (function(){
   const t=D.trust, r=$("trust");
+  const dr=t.direction;
+  if(dr&&dr.n)r.append(h("p",{style:"margin-top:0"},`Supervision-transcript check: on ${dr.n} skill comments from ${dr.sessions} supervision(s), the scorer agreed in direction on ${dr.agree} (${Math.round(100*dr.rate)}%). Direction only: strength vs. growth edge, not the size of the gap.`));
   const vr=D.sessions.map(x=>x.scoring&&x.scoring.quote_check).filter(q=>q&&q.verbatim_rate!=null);
   const tot=vr.reduce((a,q)=>a+q.checked,0), ok=vr.reduce((a,q)=>a+q.checked*q.verbatim_rate,0);
   r.append(h("p",{style:"margin-top:0"},t.calibrated_sessions<3?`Not calibrated yet: ${t.calibrated_sessions} session(s) rated by your supervisor. Rate at least 3 (use the supervisor command) before trusting trends.`:`Calibrated on ${t.calibrated_sessions} supervisor-rated sessions: mean absolute difference ${t.mae??"–"} points on a 0–4 scale across ${t.n_ratings} skill ratings; stage agreement ${t.stage_agreement==null?"–":Math.round(100*t.stage_agreement)+"% of "+t.stage_n}.`),
