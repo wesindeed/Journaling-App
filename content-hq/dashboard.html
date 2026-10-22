@@ -1,0 +1,926 @@
+<title>Content HQ</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Layout: a control room. Sticky tab bar, one panel at a time, summary first, detail below. */
+:root {
+  --bg: #EEF2F0;
+  --surface: #FFFFFF;
+  --surface-2: #E4EBE8;
+  --ink: #14211D;
+  --ink-2: #41524B;
+  --ink-3: #596A63;
+  --line: #D0DAD6;
+  --accent: #1B6B58;
+  --accent-ink: #FFFFFF;
+  --accent-soft: #D6EBE3;
+  --good: #1D7443;
+  --good-bg: #DDF0E5;
+  --warn: #8F5A00;
+  --warn-bg: #F7E8C8;
+  --crit: #A93528;
+  --crit-bg: #F6DAD5;
+  --font-display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", sans-serif;
+  --font-body: "DM Sans", "Segoe UI", system-ui, sans-serif;
+  --font-data: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0E1614; --surface: #16211E; --surface-2: #1F2D29; --ink: #E6EFEB; --ink-2: #B0C2BA;
+    --ink-3: #8DA299; --line: #2B3B36; --accent: #58C2A3; --accent-ink: #06211A; --accent-soft: #1B3A31;
+    --good: #66D194; --good-bg: #173425; --warn: #E3AE55; --warn-bg: #3A2F15; --crit: #F28B7F; --crit-bg: #3B1E1A;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0E1614; --surface: #16211E; --surface-2: #1F2D29; --ink: #E6EFEB; --ink-2: #B0C2BA;
+  --ink-3: #8DA299; --line: #2B3B36; --accent: #58C2A3; --accent-ink: #06211A; --accent-soft: #1B3A31;
+  --good: #66D194; --good-bg: #173425; --warn: #E3AE55; --warn-bg: #3A2F15; --crit: #F28B7F; --crit-bg: #3B1E1A;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.5; }
+body { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 0 56px; }
+.wrap { max-width: 1120px; margin: 0 auto; }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; line-height: 1.15; }
+h2 { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; }
+h3 { font-size: 16px; font-weight: 700; }
+p { margin: 0; }
+a { color: var(--accent); }
+button, select, input, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.mono { font-family: var(--font-data); font-variant-numeric: tabular-nums; }
+.muted { color: var(--ink-3); }
+.eyebrow { font-size: 11px; letter-spacing: 0.09em; text-transform: uppercase; color: var(--ink-3); font-weight: 500; }
+
+/* top bar */
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); background: var(--bg); z-index: 20; }
+.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 15; background: var(--bg); border-bottom: 1px solid var(--line); margin: 0 calc(-1 * max(16px, env(safe-area-inset-left, 0px))); padding: 12px max(16px, env(safe-area-inset-right, 0px)) 0 max(16px, env(safe-area-inset-left, 0px)); }
+.top-inner { max-width: 1120px; margin: 0 auto; }
+.brandrow { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; }
+.brand { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; min-width: 0; }
+.brand h1 { font-size: 24px; font-weight: 700; }
+.brand span { color: var(--ink-3); font-size: 13px; }
+.fresh { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--ink-3); flex-wrap: wrap; }
+.tabs { display: flex; gap: 2px; margin-top: 10px; overflow-x: auto; scrollbar-width: none; }
+.tabs::-webkit-scrollbar { display: none; }
+.tab { appearance: none; background: none; border: 0; border-bottom: 3px solid transparent; padding: 8px 14px 9px; cursor: pointer; font-weight: 500; color: var(--ink-2); white-space: nowrap; display: flex; gap: 8px; align-items: center; }
+.tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); font-weight: 700; }
+.tab:hover { color: var(--ink); }
+.count { font-family: var(--font-data); font-size: 11px; background: var(--surface-2); border-radius: 99px; padding: 1px 7px; color: var(--ink-2); }
+.count.alert { background: var(--warn-bg); color: var(--warn); }
+
+main { padding-top: 22px; }
+.panel[hidden] { display: none !important; }
+.stack { display: grid; gap: 28px; }
+.sec-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 6px 16px; margin-bottom: 12px; }
+.sec-head p { color: var(--ink-3); font-size: 13px; max-width: 62ch; }
+
+/* generic */
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
+.btn { appearance: none; border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 6px 12px; cursor: pointer; font-size: 13px; font-weight: 500; min-height: 34px; }
+.btn:hover { border-color: var(--accent); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn.small { padding: 3px 9px; min-height: 28px; font-size: 12px; }
+.btn[disabled] { opacity: 0.55; cursor: default; }
+.pill { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 500; padding: 2px 9px; border-radius: 99px; background: var(--surface-2); color: var(--ink-2); white-space: nowrap; }
+.pill.good { background: var(--good-bg); color: var(--good); }
+.pill.warn { background: var(--warn-bg); color: var(--warn); }
+.pill.crit { background: var(--crit-bg); color: var(--crit); }
+.pill.acc { background: var(--accent-soft); color: var(--accent); }
+.grid { display: grid; gap: 14px; }
+.g2 { grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr)); }
+.g4 { grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); }
+
+/* KPI */
+.kpi .num { font-family: var(--font-display); font-size: 34px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.1; margin-top: 6px; font-variant-numeric: tabular-nums; }
+.kpi .sub { font-size: 12.5px; color: var(--ink-3); margin-top: 4px; }
+.kpi .sub b { color: var(--good); font-weight: 700; }
+
+/* charts */
+.chart-title { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; margin-bottom: 8px; flex-wrap: wrap; }
+.chart svg { width: 100%; height: auto; display: block; overflow: visible; }
+.chart text { fill: var(--ink-3); font-family: var(--font-data); font-size: 10.5px; }
+.chart .grid-line { stroke: var(--line); stroke-width: 1; }
+.chart .ink { fill: var(--ink); }
+#tip { position: fixed; z-index: 40; pointer-events: none; background: var(--ink); color: var(--bg); font-size: 12px; padding: 5px 9px; border-radius: 6px; max-width: 260px; opacity: 0; transition: opacity 0.08s; font-family: var(--font-data); }
+
+/* video bars */
+.vrow { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1.6fr) 64px; gap: 6px 14px; align-items: center; padding: 8px 0; border-top: 1px solid var(--line); }
+.vrow:first-child { border-top: 0; }
+.vrow .t { font-weight: 500; min-width: 0; overflow-wrap: anywhere; }
+.vrow .m { font-size: 12px; color: var(--ink-3); }
+.bar { height: 12px; background: var(--surface-2); border-radius: 0 4px 4px 0; position: relative; }
+.bar i { display: block; height: 100%; background: var(--accent); border-radius: 0 4px 4px 0; }
+.bar i.new { background: repeating-linear-gradient(135deg, var(--accent) 0 4px, var(--accent-soft) 4px 8px); }
+.vrow .v { text-align: right; font-family: var(--font-data); font-size: 13px; }
+.vstats { grid-column: 1 / -1; display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--ink-3); font-family: var(--font-data); }
+@media (max-width: 560px) { .vrow { grid-template-columns: 1fr 64px; } .vrow .bar { grid-column: 1 / -1; order: 3; } }
+
+/* insights */
+.insight { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; padding: 14px 0; border-top: 1px solid var(--line); }
+.insight:first-child { border-top: 0; padding-top: 0; }
+.insight h3 { margin-bottom: 4px; }
+.insight p { color: var(--ink-2); font-size: 14px; max-width: 78ch; }
+.insight .ev { font-size: 12px; color: var(--ink-3); margin-top: 6px; font-family: var(--font-data); }
+.insight .act { margin-top: 8px; font-size: 13.5px; }
+.insight .act b { font-weight: 700; }
+@media (max-width: 560px) { .insight { grid-template-columns: 1fr; } }
+
+/* pipeline */
+.stages { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+.stage-box { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+.stage-box .n { font-family: var(--font-display); font-size: 24px; font-weight: 700; line-height: 1.1; }
+.stage-box .l { font-size: 11.5px; color: var(--ink-3); line-height: 1.25; }
+.stage-box.has { border-color: var(--accent); }
+@media (max-width: 760px) { .stages { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.week { display: grid; grid-template-columns: 128px minmax(0, 1fr); gap: 10px 14px; padding: 12px 0; border-top: 1px solid var(--line); }
+.week:first-child { border-top: 0; }
+.week .wl { font-family: var(--font-data); font-size: 12px; color: var(--ink-2); }
+.week .wl small { display: block; color: var(--ink-3); font-size: 11px; }
+.slots { display: grid; gap: 8px; min-width: 0; }
+.open { border: 1.5px dashed var(--line); border-radius: 8px; padding: 8px 12px; font-size: 13px; color: var(--ink-3); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+@media (max-width: 560px) { .week { grid-template-columns: 1fr; } }
+.item { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; background: var(--surface); display: grid; gap: 8px; min-width: 0; }
+.item.pub { background: var(--surface-2); border-style: solid; }
+.item .top1 { display: flex; gap: 8px; align-items: start; justify-content: space-between; flex-wrap: wrap; }
+.item .ttl { font-weight: 700; font-family: var(--font-display); font-size: 15px; line-height: 1.25; min-width: 0; overflow-wrap: anywhere; flex: 1 1 240px; }
+.item .note { font-size: 12.5px; color: var(--ink-2); }
+.item .ctl { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.item select, .item input[type="date"] { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 4px 8px; min-height: 30px; font-size: 13px; }
+.prog { display: grid; grid-template-columns: repeat(6, 1fr); gap: 3px; }
+.prog i { height: 5px; border-radius: 3px; background: var(--surface-2); }
+.prog i.on { background: var(--accent); }
+.item.pub .prog i { background: var(--line); }
+.list { display: grid; gap: 10px; }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip { appearance: none; border: 1px solid var(--line); background: var(--surface); border-radius: 99px; padding: 4px 12px; font-size: 13px; cursor: pointer; }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.plan { margin-top: 12px; border: 1px solid var(--accent); border-radius: 10px; padding: 14px; background: var(--accent-soft); }
+.plan table { margin-top: 8px; }
+
+/* comments */
+.cm { display: grid; gap: 10px; }
+.cm header { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; }
+.cm .who { font-weight: 700; overflow-wrap: anywhere; }
+.cm .vid { font-size: 12.5px; color: var(--ink-3); overflow-wrap: anywhere; }
+.cm .body { white-space: pre-wrap; overflow-wrap: anywhere; color: var(--ink); font-size: 14.5px; max-width: 80ch; }
+.cm .body.clamp { display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+.cm .note { font-size: 12.5px; background: var(--warn-bg); color: var(--warn); border-radius: 6px; padding: 6px 10px; }
+.cm label { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); font-weight: 500; }
+.cm textarea { width: 100%; min-height: 96px; resize: vertical; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; line-height: 1.45; }
+.cm .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.cm.done { opacity: 0.6; }
+.cm .alt { font-size: 13px; color: var(--ink-2); border-left: 3px solid var(--line); padding-left: 10px; }
+
+/* funnel */
+.flow { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0; }
+.fstep { padding: 12px; border: 1px solid var(--line); background: var(--surface); position: relative; min-width: 0; }
+.fstep:first-child { border-radius: 10px 0 0 10px; }
+.fstep:last-child { border-radius: 0 10px 10px 0; }
+.fstep + .fstep { margin-left: -1px; }
+.fstep .nm { font-family: var(--font-display); font-weight: 700; font-size: 15px; }
+.fstep .val { font-family: var(--font-display); font-size: 26px; font-weight: 700; margin: 6px 0 2px; font-variant-numeric: tabular-nums; }
+.fstep.off .val { color: var(--ink-3); }
+.fstep.off { background: repeating-linear-gradient(135deg, var(--surface) 0 8px, var(--surface-2) 8px 9px); }
+.fstep .src { font-size: 12px; color: var(--ink-3); }
+@media (max-width: 760px) { .flow { grid-template-columns: 1fr; } .fstep, .fstep:first-child, .fstep:last-child { border-radius: 0; margin: 0 0 -1px; } .fstep:first-child { border-radius: 10px 10px 0 0; } .fstep:last-child { border-radius: 0 0 10px 10px; } }
+.tblwrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+th, td { text-align: left; padding: 8px 10px; border-top: 1px solid var(--line); vertical-align: top; }
+th { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); font-weight: 500; border-top: 0; white-space: nowrap; }
+td.mono, th.r, td.r { text-align: right; }
+.field { display: grid; gap: 4px; }
+.field input, .field select { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; min-width: 0; width: 100%; }
+.out { font-family: var(--font-data); font-size: 12.5px; background: var(--bg); border: 1px dashed var(--line); border-radius: 8px; padding: 10px; overflow-wrap: anywhere; }
+.cta-list { display: grid; gap: 6px; font-size: 13.5px; }
+.steps { margin: 0; padding-left: 20px; display: grid; gap: 6px; color: var(--ink-2); font-size: 14px; }
+.toast { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 8px 14px; border-radius: 8px; font-size: 13px; opacity: 0; pointer-events: none; transition: opacity 0.15s; z-index: 50; max-width: 90vw; }
+.toast.on { opacity: 1; }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="top-inner">
+      <div class="brandrow">
+        <div class="brand"><h1>Content HQ</h1><span>Wes White Counseling · @weswhitecounseling</span></div>
+        <div class="fresh"><span id="fresh">Snapshot: Oct 22, 2026</span><button class="btn small" id="refreshBtn" type="button" title="Pulls videos, channel stats and comments from VidIQ. Uses about 15 VidIQ credits.">Refresh from VidIQ</button></div>
+      </div>
+      <nav class="tabs" role="tablist" aria-label="Sections">
+        <button class="tab" role="tab" data-tab="overview" aria-selected="true">Overview</button>
+        <button class="tab" role="tab" data-tab="pipeline" aria-selected="false">Production <span class="count" id="cPipe">0</span></button>
+        <button class="tab" role="tab" data-tab="comments" aria-selected="false">Comments <span class="count alert" id="cCom">0</span></button>
+        <button class="tab" role="tab" data-tab="funnel" aria-selected="false">Funnel</button>
+        <button class="tab" role="tab" data-tab="sources" aria-selected="false">Data sources</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <!-- OVERVIEW -->
+    <section class="panel stack" id="p-overview" role="tabpanel">
+      <div class="grid g4" id="kpis"></div>
+      <div class="grid g2">
+        <div class="card chart"><div class="chart-title"><h3>Subscribers</h3><span class="muted mono" style="font-size:12px" id="subsNote"></span></div><div id="chSubs"></div></div>
+        <div class="card chart"><div class="chart-title"><h3>Channel views per day</h3><span class="muted mono" style="font-size:12px" id="viewsNote"></span></div><div id="chViews"></div></div>
+      </div>
+      <div class="card">
+        <div class="sec-head"><div><h2>Where to push next</h2><p>Built from your last 11 public videos, the script queue and un-replied comments. Patterns from 11 videos are leads to test, not conclusions.</p></div></div>
+        <div id="insights"></div>
+      </div>
+      <div class="card">
+        <div class="sec-head"><div><h2>Recent uploads</h2><p>Views so far. Striped bars are under 7 days old and still gaining.</p></div></div>
+        <div id="vlist"></div>
+      </div>
+      <div class="card">
+        <div class="sec-head"><div><h2>Video ideas your viewers just handed you</h2><p>Pulled from un-replied comments. Each one is a question someone already wants answered.</p></div></div>
+        <div id="ideas" class="list"></div>
+      </div>
+    </section>
+
+    <!-- PIPELINE -->
+    <section class="panel stack" id="p-pipeline" role="tabpanel" hidden>
+      <div>
+        <div class="sec-head"><div><h2>Production pipeline</h2><p>Scripts read from your Drive "To Film" folder. Change a stage or date and it saves for the next time you open this page.</p></div>
+          <div class="chips" id="pipeFilters"></div></div>
+        <div class="stages" id="stageStrip"></div>
+      </div>
+      <div class="card">
+        <div class="sec-head"><div><h2>Next 8 weeks</h2><p>Target: <b id="tgtTxt">1 long video</b> a week. Dates you set below land here.</p></div>
+          <div class="row"><button class="btn primary" id="planBtn" type="button">Suggest a schedule</button></div></div>
+        <div id="planOut"></div>
+        <div id="weeks"></div>
+      </div>
+      <div>
+        <div class="sec-head"><div><h2>Needs a date</h2><p>Scripts with no publish date yet. Seasonal ones are flagged.</p></div></div>
+        <div id="undated" class="list"></div>
+      </div>
+    </section>
+
+    <!-- COMMENTS -->
+    <section class="panel stack" id="p-comments" role="tabpanel" hidden>
+      <div>
+        <div class="sec-head"><div><h2>Comments to answer</h2><p id="cmSub"></p></div>
+          <div class="chips" id="cmFilters"></div></div>
+        <div id="cmList" class="list"></div>
+      </div>
+    </section>
+
+    <!-- FUNNEL -->
+    <section class="panel stack" id="p-funnel" role="tabpanel" hidden>
+      <div>
+        <div class="sec-head"><div><h2>Video to customer path</h2><p>Only the YouTube step is live. The other four need the connections on the Data sources tab, and stay empty here until then.</p></div></div>
+        <div class="flow" id="flow"></div>
+      </div>
+      <div class="grid g2">
+        <div class="card">
+          <h3>What each recent video asks viewers to do</h3>
+          <p class="muted" style="font-size:13px;margin:4px 0 10px">From your own pinned or first comments. Videos with no entry had no owner comment in the 50 most recent threads, so the link may be in the description or an older comment.</p>
+          <div class="tblwrap"><table id="ctaTbl"></table></div>
+        </div>
+        <div class="card">
+          <h3>Tag a link to a video</h3>
+          <p class="muted" style="font-size:13px;margin:4px 0 12px">Adds UTM tags so Google Analytics can tell which video sent the click. See the caveat below for Kit and ThriveCart pages.</p>
+          <div class="grid" style="gap:10px">
+            <div class="field"><label class="eyebrow" for="utmVideo">Video</label><select id="utmVideo"></select></div>
+            <div class="field"><label class="eyebrow" for="utmBase">Link</label><select id="utmBase"></select></div>
+            <div class="field"><label class="eyebrow" for="utmMed">Where the link lives</label><select id="utmMed"><option value="pinned_comment">Pinned comment</option><option value="description">Description</option><option value="end_screen">End screen</option></select></div>
+            <div class="out" id="utmOut"></div>
+            <div class="row" style="display:flex;gap:8px"><button class="btn primary" id="utmCopy" type="button">Copy link</button></div>
+            <p class="muted" style="font-size:12.5px">Google Analytics reads UTM tags only on pages where your GA tag runs, such as your Squarespace site. Kit and ThriveCart pages sit on their own domains. For those, the dependable route is one Kit form or tag per video call-to-action, and a ThriveCart link or coupon per video. Check what your plan supports before relying on UTM pass-through.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SOURCES -->
+    <section class="panel stack" id="p-sources" role="tabpanel" hidden>
+      <div class="card">
+        <div class="sec-head"><div><h2>Data sources</h2><p>What is wired in today, and what each remaining piece needs.</p></div></div>
+        <div class="tblwrap"><table id="srcTbl"></table></div>
+      </div>
+      <div class="grid g2">
+        <div class="card">
+          <h3>Getting your two Claude chats into the dashboard</h3>
+          <p class="muted" style="font-size:13px;margin:6px 0 10px">Project chats are not readable by any connector available here, so the dashboard cannot see them directly. A shared table fixes that: the chat writes the schedule, the dashboard reads it.</p>
+          <ol class="steps">
+            <li>Paste the prompt below at the end of each scheduling chat.</li>
+            <li>Paste the table it returns into a Notion database called "Content Calendar" (Notion is already connected to this session).</li>
+            <li>The dashboard reads that database instead of the Drive folder, so stages and dates come from the chats.</li>
+          </ol>
+          <div class="out" id="chatPrompt" style="margin-top:12px">Output our current content calendar as a table with these columns: Title | Format (Long or Short) | Target publish date (YYYY-MM-DD) | Stage (Research, Scripted, Filmed, Editing, Thumbnail and title, Scheduled, Published) | Primary keyword | Script link | Lead magnet or course CTA. One row per video, soonest first.</div>
+          <div class="row" style="display:flex;gap:8px;margin-top:10px"><button class="btn" id="copyPrompt" type="button">Copy prompt</button></div>
+        </div>
+        <div class="card">
+          <h3>Why the business tools take a middle layer</h3>
+          <p style="color:var(--ink-2);font-size:14px;margin-top:6px">A page like this cannot safely hold API keys for Kit, ThriveCart or Google Analytics. Two clean ways to connect them:</p>
+          <ol class="steps" style="margin-top:10px">
+            <li><b>Zapier or Make into a Google Sheet.</b> New Kit subscriber, ThriveCart purchase and a daily GA4 export each append a row. This dashboard reads the Sheet through the Drive connector that is already connected. Lowest effort.</li>
+            <li><b>A connector for each tool.</b> Cleaner and live, but needs a Kit or GA4 connector added to your Claude account, which is not there today.</li>
+          </ol>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+<div id="tip"></div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+/* ============================ DATA (snapshot Oct 22, 2026, pulled from VidIQ and Google Drive) ============================ */
+const CHANNEL_ID = "UC9vSwPc7LN97KM8D9VrP-uw";
+const STATE = {
+  asOf: "2026-10-22",
+  daily: { start: "2026-09-22",
+    subs: [4490,4520,4550,4570,4590,4640,4660,4700,4730,4760,4780,4810,4830,4870,4920,4960,5000,5010,5030,5040,5050,5070,5100,5130,5140,5160,5170,5190,5220,5240,5240],
+    views: [484104,489180,493196,498964,501297,510339,510339,518898,529178,539445,548136,554194,559370,564928,573367,582005,589496,592845,600112,603348,605951,611021,612202,617275,623318,626910,629620,631032,633640,635631,640545] },
+  channelVideos: 413,
+  videos: [
+    {id:"FlWY1X07Zj8",title:"Can Your Partner Really Change After an Affair?",pub:"2026-10-22",views:106,likes:22,comments:1,min:15.8},
+    {id:"YklyxWX7ts0",title:"Is It Cheating? OnlyFans, Sexting & Cam Sites",pub:"2026-10-20",views:378,likes:11,comments:3,min:13.4},
+    {id:"O5AQ10b9yGc",title:"Shame After an Affair: Why It Makes You Less Accountable",pub:"2026-10-15",views:3097,likes:72,comments:9,min:18.5},
+    {id:"2CMxj7at0pE",title:"Real vs. Fake Apology After an Affair",pub:"2026-10-12",views:1035,likes:48,comments:5,min:11.2},
+    {id:"0sMx6by0NUE",title:"Remorse vs Regret: Is Your Partner Truly Sorry?",pub:"2026-10-08",views:1993,likes:58,comments:10,min:6.9},
+    {id:"34Xa8jq4nLw",title:"Why Do People Cheat? 5 Psychological Profiles",pub:"2026-10-05",views:9690,likes:199,comments:27,min:28.4},
+    {id:"CKidKZWmrqU",title:"Emotional Affair Recovery: 4 Steps That Actually Work",pub:"2026-10-01",views:3748,likes:76,comments:17,min:12.8},
+    {id:"6VTTi414sbk",title:"Fake Remorse After an Affair: 6 Warning Signs",pub:"2026-09-28",views:10004,likes:116,comments:24,min:22.7},
+    {id:"Mg8IWEGUlrc",title:"3 Tools to Stop Intrusive Thoughts After Betrayal",pub:"2026-09-24",views:947,likes:33,comments:3,min:10.0},
+    {id:"XEmcIk7gUuo",title:"How to Stop Intrusive Thoughts After Betrayal",pub:"2026-09-21",views:3497,likes:63,comments:5,min:15.7},
+    {id:"y6vDruqmMCQ",title:"How Do You Know an Affair Is Really Over?",pub:"2026-09-15",views:3147,likes:55,comments:4,min:8.3}
+  ]
+};
+
+const LINKS = {
+  first30: {label:"First 30 Days After Discovery", url:"https://prodigious-originator-1801.kit.com/8bcd4f6195", kind:"Kit"},
+  shouldistay: {label:"Should I Stay? Self-Reflection Guide", url:"https://prodigious-originator-1801.kit.com/shouldistay", kind:"Kit"},
+  mistakes: {label:"5 Mistakes That Make Recovery Harder", url:"https://prodigious-originator-1801.kit.com/5hiddenmistakes", kind:"Kit"},
+  course: {label:"Managing Intrusive Thoughts After Betrayal (course)", url:"https://weswhitecoaching.thrivecart.com/managing-intrusive-thoughts-after-betrayal/", kind:"ThriveCart"}
+};
+/* Owner comments seen in the 50 most recent threads. */
+const CTA_MAP = {
+  "FlWY1X07Zj8":["shouldistay","first30","mistakes"],
+  "YklyxWX7ts0":["mistakes"],
+  "O5AQ10b9yGc":["first30"],
+  "2CMxj7at0pE":["course","first30"]
+};
+
+const STAGES = [
+  {k:"research",l:"Research"},{k:"scripted",l:"Scripted"},{k:"filmed",l:"Filmed"},
+  {k:"editing",l:"Editing"},{k:"ready",l:"Title and thumbnail"},{k:"scheduled",l:"Scheduled"},{k:"published",l:"Published"}
+];
+const DRIVE = id => "https://docs.google.com/document/d/" + id + "/edit";
+const ITEMS = [
+  {id:"s-four-stages",title:"Surviving Infidelity: The 4 Stages Every Betrayed Partner Goes Through",fmt:"long",len:"12–14 min",drafted:"2026-08-31",doc:"1-CAhp3yuON8eqnQ3P3bZ7fnHVcu5XxnBMgi9Vfi8Ye8",prio:1,note:"Targets \"surviving infidelity\" (29,811 searches a month, per the script). Highest search volume in the queue, drafted 52 days ago."},
+  {id:"s-help-partner",title:"How to Help Your Partner Heal After Infidelity (What They're Actually Going Through)",fmt:"long",len:"12–14 min",drafted:"2026-10-20",doc:"1XhOri6PG0Vxex5gG3q290941YjWIi4HczFcd3tZobD0",prio:2,note:"Speaks to the partner who cheated. Three recent commenters are in exactly that spot."},
+  {id:"s-holidays",title:"Surviving the Holidays After Betrayal",fmt:"long",len:"13–15 min",drafted:"2026-10-20",doc:"1tN5uHKc20XNfcP4f3Vt7cJjUj3F5hP0iGrOzoDQeY5I",prio:0,dueBy:"2026-11-12",note:"Seasonal. Thanksgiving is Nov 26, so aim to publish by about Nov 12."},
+  {id:"s-affair-partner",title:"Why the Affair Partner Seemed So Different (And What It Actually Means About Your Marriage)",fmt:"long",len:"11–13 min",drafted:"2026-10-20",doc:"1w4fb8CxSiBlhBuQEW2fWHKcmhukrzMH_XFVejdg4ric",prio:3,note:"Mid-video: 5 Hidden Mistakes. End: course."},
+  {id:"s-healing-signs",title:"Healing from Infidelity: Signs You're Actually Getting Better",fmt:"long",len:"9–11 min",drafted:"2026-10-20",doc:"1SEAhrNlG_VKzrjQ4ycbDjg-KfDb4duuVovrRULeQP1Y",prio:4,note:"Points back to your 4 Stages video, so film that one first."},
+  {id:"s-porn",title:"Why His Porn Use Feels Like an Affair (Because Your Brain Says It Is)",fmt:"long",len:"20–25 min",drafted:"2026-10-14",doc:"1pR2pVJna4Sez0g2PX8EJscA7EQdKr7JBonICpl--quk",prio:5,note:"Cornerstone for the porn short dated Nov 10. Long videos of 20+ minutes are your top two so far."},
+  {id:"s-mind",title:"You're Not Losing Your Mind. You're Experiencing Betrayal Trauma.",fmt:"long",len:"11–14 min",drafted:"2026-07-06",doc:"1R2iyuXho_oHUDXOS-DDvUSXCu-UjSrp-bNpyPd2WDCo",prio:6,note:"Drafted Jul 6 and still unfilmed."},
+  {id:"s-last",title:"Do Affair Relationships Actually Last? What Research Shows",fmt:"long",len:"14–17 min",drafted:"2026-09-10",doc:"1N-IBjvGmEl20c_mrs7GbyPhrEl8EEkavbI129Dxdd7s",prio:7,note:"Its keyword (why people cheat, 15,314 a month) is the one your 9,690-view video already ranks for. Retitle or angle it differently."},
+  {id:"s-nothing",title:"\"It Has Nothing to Do With You\": Why Porn Betrayal Feels So Personal",fmt:"short",len:"5–6 min",drafted:"2026-10-14",doc:"1s9dhS3E1f5Llh0fetNihrmNohWPsMWPP-IDXKZTdOLw",date:"2026-11-10",note:"Script says it posts Nov 10 and pairs with the porn cornerstone."},
+  {id:"s-family",title:"What to Say When Family Asks About the Affair at the Holidays",fmt:"short",len:"5–6 min",drafted:"2026-10-20",doc:"1Rfp5Thm9oth8fI_FIYBaml73-A7K_q88Wye9R3TWlHY",date:"2026-11-17",note:"Script says it posts Nov 17."},
+  {id:"s-dday",title:"What to Do the Week Before a D-Day Anniversary",fmt:"short",len:"5–6 min",drafted:"2026-10-14",doc:"1bgN5-ZFWTj1VYPaWeuR9GkVo7qWlnNmxokt2mdzWI4M",date:"2026-11-24",note:"Script says it posts Nov 24."},
+  {id:"s-forgive",title:"Is It Forgiveness or Is It Giving Up? How to Tell the Difference",fmt:"short",len:"5–6 min",drafted:"2026-10-14",doc:"1oEo36xUaUv5a-szb0JCJ1_2xC-iV3_1TxKqtjn3yS0A",date:"2026-12-15",note:"Script says it posts Dec 15."},
+  {id:"s-grief",title:"How to Cope With Being Cheated On: The Grief Nobody Talks About",fmt:"short",len:"5–6 min",drafted:"2026-10-14",doc:"1mmNZu7FMgr8mqCz4I4k3RbDOPpRszbx21VxErwJa7gY",date:"2026-12-22",note:"Script says it posts Dec 22."},
+  {id:"s-signs",title:"3 Signs Your Partner Is Actually Doing the Work After an Affair",fmt:"short",len:"5–6 min",drafted:"2026-09-10",doc:"1AfK__RIe__RvpH0kqxDvGGS28tg_10UwJpNpxvfTRbs",note:"Drafted Sep 10, no date. Good filler for a short slot."}
+];
+const DEFAULT_STAGE = "scripted";
+
+/* Triage: reply = needs a real answer, care = handle gently, thanks = quick acknowledgement, skip = leave or moderate. */
+const COMMENTS = [
+ {id:"Ugy4epJuuA7GFipkv3V4AaABAg",vid:"TUD3LfReoCo",vt:"5 Signs Your Partner Is Having an Emotional Affair (Not Just a Friendship)",a:"@kellythompson1448",d:"2026-10-14",likes:0,tri:"reply",
+  text:"I can feel my partner’s doing something I think it’s a emotional affair right now and I try to talk to him about our relationship and ask is there someone else. He gets loud and says I’m imagining things or that I’m crazy. To me that actually feels like a validation.",
+  draft:"I'm sorry, that's a lonely place to be. I can't tell from a comment what's going on, and getting loud isn't proof of an affair. It is a way of shutting the conversation down, though, and that's worth taking seriously on its own. Try describing the pattern you've noticed and how it affects you, rather than asking \"is there someone else?\" If he won't engage, a couples session gives the conversation a safer container."},
+ {id:"UgyLFAfUPqHC_J7yyFJ4AaABAg",vid:"JQJFTaMHVkQ",vt:"Your Partner's Emotional Affair Was Worse Than You Think",a:"@Stormyraincloudinmyheart",d:"2026-10-20",likes:0,tri:"reply",
+  text:"What if they won’t stop having their emotional fair because they don’t want to acknowledge that it is in an emotional affair..?? What do I do? [...] He’s pulled away from me emotionally and physically hardly talks to me but then I find messages to her day and night [...] gifts [...] he’s been deleting them and told me that he was deleting them because he didn’t want me to see them [...] we’ve been together 10 years married five years. I don’t know what to do.",
+  draft:"I'm so sorry. That sounds incredibly painful. I can't diagnose from a comment, but secrecy, deleted messages, and him pulling away from you while pouring energy into someone else are worth taking seriously, whatever he calls it. You're not imagining it. Asking for transparency about the messages, ideally with a couples therapist in the room so it stays safe, is a fair next step. This free guide was written for the early, confusing stage: " + "https://prodigious-originator-1801.kit.com/8bcd4f6195"},
+ {id:"UgyQ7D1oKcAm9njL6vd4AaABAg",vid:"jBaXY9K9FTI",vt:"5 Signs Of Real Remorse After An Affair",a:"@ekassien",d:"2026-10-20",likes:0,tri:"reply",
+  text:"My husband had his affair 24 years ago but he has never actually come out & said, \"I'm sorry I hurt you\". Should I ask for an apology?",
+  draft:"Yes, it's reasonable to ask. Wanting to hear \"I'm sorry I hurt you\" after 24 years isn't petty. An unspoken apology often keeps the wound open. You might say: \"I'm not trying to start a fight. I need to hear that you understand how this hurt me.\" If that feels too loaded to do alone, a couples therapist can help structure the conversation."},
+ {id:"UgxLo03soxxGAO2JLzl4AaABAg",vid:"mrP8oWsoICI",vt:"What Type of Affair Did Your Partner Have? Here's What It Actually Means",a:"@julianolan4256",d:"2026-10-15",likes:0,tri:"reply",
+  text:"What if your husband had multiple different types of affairs? [...] He said he wants to stop, he cut all contact, changed phone number, stopped drinking, is being more open then he's ever been with me, sought counselling [...] It's only been a month [...] I'm hopeful but pessimistic all at the same time. [...] I've been with him for 35 years and we both want our marriage.",
+  draft:"Thank you for sharing all of this. Hopeful and pessimistic at the same time is an honest place to be a month in, and you don't have to pick one. The structure you describe, openness, clear boundaries, honesty about the harm, is the kind recovery needs. It can help to have your own support alongside his counseling, so you have somewhere to put the pessimistic days."},
+ {id:"UgxwGjBYuEA1R8DwQqx4AaABAg",vid:"2CMxj7at0pE",vt:"Real vs. Fake Apology After an Affair",a:"@donaldbaker9992",d:"2026-10-20",likes:0,tri:"reply",
+  text:"Very good. Although I am dealing with a wife that has had more than 3 affairs. Plus I am to blame for over looking at all her red flags. She let me know that she cheated in her previous two marriages, but I took her storyline like she was the victim instead of looking that was not the answer. Because your partner was cheating.",
+  draft:"Thank you for sharing this, Donald. Seeing a pattern clearly in hindsight is painful, but noticing red flags late isn't the same as being responsible for her choices. Be gentle with yourself, and consider a therapist who works with betrayal, so you have support while you decide what comes next."},
+ {id:"Ugxca6gF7OFSBINsgZ14AaABAg",vid:"0sMx6by0NUE",vt:"Remorse vs Regret: Is Your Partner Truly Sorry?",a:"@maryannebell4163",d:"2026-10-09",likes:0,tri:"reply",
+  text:"It’s been less than 2 months since the discovery. He does show regret, very intensely, tears and seemed to have some breakthrough with saying more empathic apologies. But he bought me a necklace - specifically an “I owe you an apology” necklace [...] It hurt my feelings and then, as hurt goes, it pissed me off. [...] I haven’t told him how it felt. [...] Would love to hear your thoughts on this.",
+  draft:"Thank you for trusting us with this. I can't speak to his intentions, but your reaction makes sense. When an apology arrives as a purchase, it can feel like the gesture is meant to close the topic. Gifts aren't wrong, but they land best after the real work: acknowledging the pain, answering questions, following through. Telling him how the necklace felt is a fair conversation, and it sounds like he's capable of hearing it."},
+ {id:"UgyyeCEeip0awmKOrlJ4AaABAg",vid:"0sMx6by0NUE",vt:"Remorse vs Regret: Is Your Partner Truly Sorry?",a:"@andrewpearse53",d:"2026-10-09",likes:0,tri:"reply",
+  text:"Hi Wes, Thanks for your vids. [...] I am the one who betrayed my wife's trust in an emotional affair. I can't seem to get past this regret stage. I try to make space to hear my wife's anger but her pain comes out so strong I just get stuck in my head and withdraw. We are six months past discovery day today and right now things are getting worse not better.",
+  draft:"Thank you for being honest about this, it isn't easy to say publicly. Getting stuck in your head and withdrawing when her pain comes out is common for the partner who had the affair, and it's often shame. The shift is staying with her pain without defending or fixing: \"That makes sense. I hurt you. I'm here.\" Your own therapist alongside couples work can help with this part. This guide is written for both partners: https://prodigious-originator-1801.kit.com/5hiddenmistakes"},
+ {id:"Ugy5qug_8Uj9WAktrYB4AaABAg",vid:"34Xa8jq4nLw",vt:"Why Do People Cheat? 5 Psychological Profiles",a:"@loriking6279",d:"2026-10-16",likes:0,tri:"reply",
+  text:"What happens when the cheater does want to go to couple counseling or therapy when the cheater comes back after 8 years and living with affair partner.",
+  draft:"That's a hard situation, and there's no single script for it. Eight years is a long time, and wanting counseling doesn't by itself tell you whether they're ready for real repair. A good first step is a few individual sessions for you, so you can decide what you need before deciding what they've earned. This guide is built for that stage: https://prodigious-originator-1801.kit.com/shouldistay"},
+ {id:"UgyPEHYXM-ZOX-dPeQN4AaABAg",vid:"guhqIlwY1NY",vt:"How I Healed My Avoidant Attachment",a:"@rachael2964",d:"2026-10-17",likes:0,tri:"reply",
+  text:"Ahh I need help, when I think about showing my emotions and becoming vulnerable I get scared and start to cry and I don’t want to",
+  draft:"That makes sense. Vulnerability can feel unsafe when you learned early that it wasn't. Crying doesn't mean you're doing it wrong, and you don't have to force it. Start small: one honest sentence to someone safe, and let the rest come at your pace. A therapist can help you build that gradually."},
+ {id:"UgxpWDuL-zjCyai_VA54AaABAg",vid:"2CMxj7at0pE",vt:"Real vs. Fake Apology After an Affair",a:"@Hopium2025",d:"2026-10-12",likes:1,tri:"reply",
+  text:"What do you do when you get no apology? They just want to comoartmentalize it and go on. That hurts. It’s a wound that stays open forever.",
+  draft:"That open wound is real. When someone compartmentalizes, the hurt partner ends up carrying it alone. It's reasonable to tell them what you need to hear and why: \"I'm not asking you to feel ashamed. I'm asking you to acknowledge what this did to me.\" If they can't, that shows where repair is stuck, and a therapist can help you work out next steps."},
+ {id:"UgzraPRZnXgym_mJv7d4AaABAg",vid:"6VTTi414sbk",vt:"Fake Remorse After an Affair: 6 Warning Signs",a:"@alanmayne8513",d:"2026-10-12",likes:1,tri:"reply",
+  text:"My problem with counseling is being completely transparent about everything. Her mindset is if she isn’t asked specifically that she didn’t know it needed to be told. [...] I was told that it’s on me to forgive and get past it. And I told her it’s hard to get past or over it with unanswered questions. (3 comments from this viewer)",
+  draft:"What you're describing, answering only what's asked and leaving out what led to it, is a common frustration. Real transparency means volunteering what the other person needs to understand, not just responding to questions. And you're allowed to need answers before you can move on. For many people, forgiveness comes after understanding, not before it."},
+ {id:"UgwFpTktu3sn6kxQdY14AaABAg",vid:"JQJFTaMHVkQ",vt:"Your Partner's Emotional Affair Was Worse Than You Think",a:"@adamrivero3764",d:"2026-10-08",likes:4,tri:"reply",
+  text:"If you are the betrayed partner, let me set an expectation for you. Emotional, physical, or otherwise; no one is going to rally around you. An affair creates a debt that only the betrayed ends up financing. [...] An affair is an affair. Betrayal is Betrayal. (2 comments, 6 likes combined)",
+  draft:"Betrayal is betrayal, I agree, and I hear how isolating it can feel. I'd gently push back on \"no one is going to rally around you.\" Often the right support has to be found, not stumbled into. A therapist or a betrayed-partner group is a good place to start.",
+  alt:"This is a chance to disagree openly in public, with kindness. The draft does that."},
+ {id:"UgyGWmcV1Cz8fWNih3J4AaABAg",vid:"34Xa8jq4nLw",vt:"Why Do People Cheat? 5 Psychological Profiles",a:"@angelbaby24-7",d:"2026-10-15",likes:0,tri:"reply",
+  text:"I genuinely think my partner has all of these, is that possible?",
+  draft:"It's possible. The five profiles overlap, and most people blend a few. Use them as a lens for understanding the pattern, not as a diagnosis of your partner. The more useful question is usually how they respond now: with accountability, or with deflection."},
+ {id:"Ugwjj5TKiZ-8KsIB_MB4AaABAg",vid:"34Xa8jq4nLw",vt:"Why Do People Cheat? 5 Psychological Profiles",a:"@PammieWW",d:"2026-10-14",likes:2,tri:"reply",
+  text:"Are conflict avoiders cowards?",
+  draft:"No. Avoiding conflict is usually a protective strategy, not cowardice. It often starts when conflict didn't feel safe. The cost shows up later, when the other person never gets to meet the real you. [Optional, only if you want to share: I say this as someone who has had to work on it myself.]",
+  alt:"Two likes and a one-line question. This is a ready-made short, and it overlaps with the pattern you are working on yourself."},
+ {id:"UgzFok-BtTQOl4bwOwR4AaABAg",vid:"O5AQ10b9yGc",vt:"Shame After an Affair: Why It Makes You Less Accountable",a:"@Jtf-yyz",d:"2026-10-15",likes:1,tri:"reply",
+  text:"I am not sure how to be present. I was unfaithful and it’s been a month since D day. She won’t talk to me and lives in separate home.",
+  draft:"Thank you for saying that out loud. A month after discovery, silence and distance are often how she's protecting herself, not a final answer. Presence right now looks steady and unpressured: you show up, answer what she asks honestly, and don't ask her to make you feel better. Having your own therapist during this stretch helps too. This guide is written for both partners: https://prodigious-originator-1801.kit.com/5hiddenmistakes"},
+ {id:"UgzrPdE6B3y_hjZvkmN4AaABAg",vid:"0sMx6by0NUE",vt:"Remorse vs Regret: Is Your Partner Truly Sorry?",a:"@djchewmacca",d:"2026-10-08",likes:6,tri:"care",
+  text:"[...] She ended her life back in July. I feel like i have wasted 5 yeara of my life trying to fix a broken relationship. I am doing okay now. The kids are well looked after by me. Strange being a single dad. (3 comments from this viewer across 3 videos, 6 likes combined)",
+  note:"Mentions their partner's suicide in July. Keep the reply short, warm and advice-free.",
+  draft:"I'm so sorry for everything you've been through, including losing her. Carrying that and caring for your kids takes more than most people see. I'm glad you're looking after yourself, and I'm glad you're here."},
+ {id:"UgxOHyc5EFYClnnrt0p4AaABAg",vid:"UZr2bcHN-Lg",vt:"Is Your Partner STILL Lying to You? 6 Signs After an Affair",a:"@mabelveitch1178",d:"2026-10-11",likes:0,tri:"care",
+  text:"5 years of hidden secrets 2003-2007, would not answer, be mad give me the silent treatment [...] I was there for him all the time. He died June 7 2026. I waited for him to say, he was sorry. but it never came and now i have it in my grief",
+  note:"Fresh grief (a death in June). Keep it brief and don't advise.",
+  draft:"I'm so sorry. Waiting for an apology that never came, and then losing him, leaves a grief with nowhere to go. That unfinished apology is a real loss on top of the others. Please be gentle with yourself."},
+ {id:"Ugzqh4LP2TzjCqUImh54AaABAg",vid:"JQJFTaMHVkQ",vt:"Your Partner's Emotional Affair Was Worse Than You Think",a:"@VideoStar81",d:"2026-10-09",likes:2,tri:"care",
+  text:"[...] This week my partner has finally admitted to the affair - it was a full blown affair. [...] he told me he feels guilty for telling me but not for the emotional and physical affair. [...] I've given him 7 years of my life, moved countries for him and gave up everything of my former life [...] It's completely raw and I'm really quite lost. However, your videos are great and helpful - thank you.",
+  note:"Days after discovery. Another viewer (@DrFinancialLiteracy) already replied.",
+  draft:"I'm so sorry. Hearing that he feels guilty about telling you but not about the affair itself would hurt anyone. You don't have to figure out the next step right now. One day at a time, and please let someone support you, ideally a therapist who works with betrayal. Thank you for the kind words."},
+ {id:"UgwEasC3X6-OI_WvWol4AaABAg",vid:"2CMxj7at0pE",vt:"Real vs. Fake Apology After an Affair",a:"@red.rose.08",d:"2026-10-13",likes:0,tri:"thanks",
+  text:"Thank you for saying that it's not easy to do a real apology because for people like me, i actually never have seen nor was i ever taught what that looked like when i was small and growing up. [...] i truly and genuinely want to learn how to do this right and i want to change. Being defensive is my auto-response and i want to break that reaction. [...] My spouse and I have a therapist [...] Anyway, thanks for making your videos. They are a marriage life-saver.",
+  draft:"Thank you for this. Being honest that you never saw a real apology modeled is part of how you start learning one. Catching the defensiveness in the moment is the skill, and you're already doing it. I'm glad you two have a therapist, and thank you for the kind words."},
+ {id:"Ugw-IfG5XE7VDiNQqe54AaABAg",vid:"5rRNz5yJNBg",vt:"How To Rebuild Physical Intimacy After An Affair",a:"@Knoch-g2o",d:"2026-10-16",likes:0,tri:"thanks",
+  text:"Five years ago i had an affair with my superior at work. [...] Thru therapy and tons of work I have my happy husband back and our family is such a joy! I don’t know if I will ever get our intimacy back but this video gives me hope.",
+  draft:"Thank you for sharing this, it took honesty. Intimacy often returns more slowly than the rest of the relationship, and sometimes in a different shape. I'm glad you two did the work, and your story will give hope to others reading this."},
+ {id:"Ugw8KNBZKDv6c4n-V-R4AaABAg",vid:"kt2UBrX0tzM",vt:"One Affair vs. Many: The Difference That Matters",a:"@sarahdescoteaux1840",d:"2026-10-17",likes:0,tri:"thanks",
+  text:"It's like buying a brand new house and everything looks perfect. Then after singing the paperwork and moving in, you discover the bricks are made from cheese, and now you can't unknow that and you're screwed.",
+  draft:"Bricks made of cheese. I'm stealing this. You've nailed the \"can't unknow it\" part."},
+ {id:"UgxMFR9yl5_He9JcAj94AaABAg",vid:"6VTTi414sbk",vt:"Fake Remorse After an Affair: 6 Warning Signs",a:"@andreagrady6834",d:"2026-10-22",likes:0,tri:"thanks",
+  text:"💯 Your videos are so incredibly helpful! 🙏",draft:"Thank you, Andrea. That means a lot. I'm glad they're helping. 🙏"},
+ {id:"UgxYYYDFUHxzvy0hxUt4AaABAg",vid:"UZr2bcHN-Lg",vt:"Is Your Partner STILL Lying to You? 6 Signs After an Affair",a:"@DTA-me3kv",d:"2026-10-19",likes:0,tri:"thanks",
+  text:"Or if they limit the amount they share",
+  draft:"Good addition. Partial sharing keeps the betrayed partner guessing, which is a big reason trust takes so long to rebuild."},
+ {id:"Ugy1FLGR5jxpIETPUtx4AaABAg",vid:"mrP8oWsoICI",vt:"What Type of Affair Did Your Partner Have? Here's What It Actually Means",a:"@Saywhat-i3i",d:"2026-10-14",likes:0,tri:"thanks",
+  text:"This is very informative, but I have to say that of all the men i know of that have been unfaithful to their partners...90% of them are not honest about what really happened when they get caught.",
+  draft:"Thank you. Partial truth right after getting caught is common, which is why I encourage honesty that continues over time rather than one big confession."},
+ {id:"UgyhXwDXj5UivToc4MR4AaABAg",vid:"JQJFTaMHVkQ",vt:"Your Partner's Emotional Affair Was Worse Than You Think",a:"@SmokeyMarkitZero",d:"2026-10-14",likes:1,tri:"thanks",
+  text:"Well, let's not forget that it can always be both, too. Fun times.",
+  draft:"True, they often overlap."},
+ {id:"UgyYqHi_EDKPM2zbgyd4AaABAg",vid:"0sMx6by0NUE",vt:"Remorse vs Regret: Is Your Partner Truly Sorry?",a:"@tallspicy",d:"2026-10-08",likes:0,tri:"thanks",
+  text:"I went on 3 dates with a man who was long distance and he told me that he had cheated on his wife and then dated a married woman. The thing that was most horrific [...] was that he didn't seem to have any remorse. He had regret because he felt entitled [...]",
+  draft:"Thank you for sharing that. It's a clear example of regret without remorse: sorry about the consequences, not about the harm."},
+ {id:"UgxNw3OsgYuUfobzI194AaABAg",vid:"fYxeTSrECXs",vt:"Why Did They Choose THAT Person? The Psychology Behind Affair Partner Selection",a:"@jasonduby3106",d:"2026-10-13",likes:0,tri:"thanks",
+  text:"So helpful to know this",draft:"I'm glad it helped. Thanks for watching."},
+ {id:"UgwQR52rBn1KKGYHBtV4AaABAg",vid:"GTI6G2mkqCQ",vt:"\"It Didn't Mean Anything?\" Yes It Did.",a:"@kmcc2355",d:"2026-10-20",likes:0,tri:"skip",
+  text:"[A very long comment arguing that people who cheat never feel remorse and never change, and telling betrayed partners to divorce immediately.] (This account also commented on \"Should You Stay After an Affair?\")",
+  note:"Long, absolute and hostile to the premise of your channel. Low value to engage. If you want to answer, the draft is a direct, kind disagreement.",
+  draft:"I hear how much pain is in this. I see it differently: I've watched couples rebuild when the person who cheated takes full accountability. But I'm sorry for what's behind this, and for your own experience."},
+ {id:"UgyNN3utcKXAFl4T-Ad4AaABAg",vid:"4mhlZFVzkys",vt:"They Cheated. Now They're Blaming You. Here's What That Really Means.",a:"@kingdominnertia",d:"2026-10-18",likes:0,tri:"skip",
+  text:"[A very long religious comment attacking you personally and a therapist you referenced, with a long block of unrelated hashtags.]",
+  note:"Personal attack. No draft. Consider \"Hold for review\" or hiding this user in YouTube Studio."},
+ {id:"Ugx9eGle-_VfkFNLuhd4AaABAg",vid:"O5AQ10b9yGc",vt:"Shame After an Affair: Why It Makes You Less Accountable",a:"@siku2391",d:"2026-10-17",likes:0,tri:"skip",
+  text:"If you're the one who had the affair, take a long walk off a short pier. You don't have a self-esteem problem when you're actually a shitty person. It IS about you and your severe deficits.",
+  note:"Hostile. Leave it, or use the optional reply, which stays calm and holds your position.",
+  draft:"Anger at betrayal makes sense. The video isn't excusing it. The point is that shame tends to make people defensive instead of accountable, and accountability is what the hurt partner needs."},
+ {id:"UgxpONqnuO_2CFx5s_J4AaABAg",vid:"O5AQ10b9yGc",vt:"Shame After an Affair: Why It Makes You Less Accountable",a:"@Digitalsleuth_PI",d:"2026-10-15",likes:1,tri:"skip",
+  text:"Shame after an affair can fuel lies, denial, and blame-shifting. As a private investigator, I know that emotions can hide the truth, but evidence reveals what words cannot. [...] I can help you gain clarity on the truth [...]",
+  note:"Promotion for a private investigator. No reply. Consider removing it."},
+ {id:"UgzYry5DhYSYB_gw6M54AaABAg",vid:"kkxMVVELLhA",vt:"The Neuroscience of Trust After an Affair",a:"@evapavlou5296",d:"2026-10-18",likes:0,tri:"skip",t:597,
+  text:"AI now! 9:57",
+  note:"Unclear. It points at 9:57 of this video, so check what you say there before deciding."}
+];
+
+const IDEAS = [
+  {q:"Are conflict avoiders cowards?",from:"@PammieWW",why:"A one-line question that opens a short. It also lines up with the pattern you are working on, which gives you a real story to tell."},
+  {q:"I had the affair and she won't talk to me. How do I be present?",from:"@Jtf-yyz, @andrewpearse53, @red.rose.08",why:"Three viewers who cheated are asking for guidance. Your queued \"How to Help Your Partner Heal\" script speaks to them directly, and your Oct 15 lead magnet draft (\"I Cheated. Now What?\") is for the same reader."},
+  {q:"What if he won't admit it is an emotional affair?",from:"@Stormyraincloudinmyheart",why:"Your emotional-affair videos keep drawing this exact situation. A short on what to do when the label itself is the fight."},
+  {q:"Should I ask for an apology 24 years later?",from:"@ekassien, @Hopium2025",why:"Two viewers describe an apology that never came. The comment threads on your apology videos are the audience for this."},
+  {q:"He says I'm crazy for asking",from:"@kellythompson1448",why:"A short on what a loud, defensive response does and does not tell you."}
+];
+
+/* ============================ HELPERS ============================ */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmt = n => Math.round(n).toLocaleString("en-US");
+const dateObj = s => new Date(s + "T12:00:00Z");
+const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const short = s => { const d = dateObj(s); return MONTHS[d.getUTCMonth()] + " " + d.getUTCDate(); };
+const iso = d => d.toISOString().slice(0, 10);
+const addDays = (s, n) => iso(new Date(dateObj(s).getTime() + n * 864e5));
+const daysBetween = (a, b) => Math.round((dateObj(b) - dateObj(a)) / 864e5);
+const mondayOf = s => { const d = dateObj(s); const w = (d.getUTCDay() + 6) % 7; return addDays(s, -w); };
+const median = a => { const b = [...a].sort((x, y) => x - y); const m = b.length >> 1; return b.length % 2 ? b[m] : (b[m - 1] + b[m]) / 2; };
+const use = n => (window.claude && window.claude.use) ? window.claude.use(n).catch(() => null) : Promise.resolve(null);
+function toast(msg) { const t = $("#toast"); t.textContent = msg; t.classList.add("on"); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove("on"), 2200); }
+async function copyText(text, okMsg) {
+  try { await navigator.clipboard.writeText(text); toast(okMsg || "Copied"); }
+  catch (e) {
+    const ta = document.createElement("textarea"); ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0"; document.body.appendChild(ta); ta.select();
+    try { document.execCommand("copy"); toast(okMsg || "Copied"); } catch (e2) { toast("Select the text and copy it"); }
+    ta.remove();
+  }
+}
+const tip = $("#tip");
+function showTip(e, html) { tip.innerHTML = html; tip.style.opacity = 1; const x = Math.min(e.clientX + 12, innerWidth - 200); tip.style.left = x + "px"; tip.style.top = (e.clientY - 34) + "px"; }
+function hideTip() { tip.style.opacity = 0; }
+
+/* ============================ SAVED STATE (db when available, else this browser) ============================ */
+const saved = { pipeline: {}, comments: {} };
+let dbh = null;
+const LS = "content-hq-v1";
+function lsLoad() { try { const j = JSON.parse(localStorage.getItem(LS) || "null"); if (j) { saved.pipeline = j.pipeline || {}; saved.comments = j.comments || {}; } } catch (e) {} }
+function lsSave() { try { localStorage.setItem(LS, JSON.stringify(saved)); } catch (e) {} }
+async function persist(coll, id, data) {
+  saved[coll][id] = data;
+  if (dbh) { try { await dbh.doc(coll + "/" + id).set(data); return; } catch (e) { /* fall through to local */ } }
+  lsSave();
+}
+async function initDb() {
+  dbh = await use("db");
+  if (!dbh) return;
+  const err = () => { dbh = null; };
+  dbh.collection("pipeline").onSnapshot(s => { s.docs.forEach(d => { saved.pipeline[d.id] = d.data(); }); renderPipeline(); renderBadges(); }, err);
+  dbh.collection("comments").onSnapshot(s => { s.docs.forEach(d => { saved.comments[d.id] = d.data(); }); renderComments(); renderBadges(); }, err);
+}
+const itemState = it => ({ stage: DEFAULT_STAGE, date: it.date || null, ...(saved.pipeline[it.id] || {}) });
+const commentDone = c => !!(saved.comments[c.id] && saved.comments[c.id].done) || c.autoDone;
+const commentDraft = c => (saved.comments[c.id] && saved.comments[c.id].draft != null) ? saved.comments[c.id].draft : (c.draft || "");
+
+/* ============================ OVERVIEW ============================ */
+function derived() {
+  const D = STATE.daily, n = D.subs.length;
+  const subsGain = D.subs[n - 1] - D.subs[0], viewsGain = D.views[n - 1] - D.views[0];
+  const dviews = D.views.slice(1).map((v, i) => v - D.views[i]);
+  return { n, subsGain, viewsGain, dviews, per1k: subsGain / (viewsGain / 1000) };
+}
+function dayLabel(i) { return short(addDays(STATE.daily.start, i)); }
+function renderKpis() {
+  const d = derived(), D = STATE.daily;
+  const waiting = COMMENTS.filter(c => c.tri !== "skip" && !commentDone(c)).length;
+  const dated = ITEMS.filter(it => itemState(it).date && itemState(it).stage !== "published").length;
+  const k = [
+    ["Subscribers", fmt(D.subs[d.n - 1]), `<b>+${fmt(d.subsGain)}</b> since ${short(D.start)}`],
+    ["Views, last 30 days", fmt(d.viewsGain), `${fmt(d.viewsGain / (d.n - 1))} a day on average`],
+    ["Subscribers per 1,000 views", d.per1k.toFixed(1), "Across the whole channel, not one video"],
+    ["Comments waiting", String(waiting), `${ITEMS.length} scripts queued, ${dated} dated`]
+  ];
+  $("#kpis").innerHTML = k.map(x => `<div class="card kpi"><div class="eyebrow">${x[0]}</div><div class="num">${x[1]}</div><div class="sub">${x[2]}</div></div>`).join("");
+}
+function lineChart(el, vals, labelFn) {
+  const W = 560, H = 190, L = 44, R = 18, T = 14, B = 26;
+  const min = Math.min(...vals), max = Math.max(...vals);
+  const lo = Math.floor(min / 100) * 100, hi = Math.ceil(max / 100) * 100;
+  const x = i => L + (W - L - R) * i / (vals.length - 1), y = v => T + (H - T - B) * (1 - (v - lo) / (hi - lo));
+  const ticks = [lo, (lo + hi) / 2, hi];
+  let g = ticks.map(t => `<line class="grid-line" x1="${L}" x2="${W - R}" y1="${y(t)}" y2="${y(t)}"/><text x="${L - 6}" y="${y(t) + 3.5}" text-anchor="end">${fmt(t)}</text>`).join("");
+  const pts = vals.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(" ");
+  const area = `M${x(0)},${y(lo)} L${pts.replace(/ /g, " L")} L${x(vals.length - 1)},${y(lo)} Z`;
+  const last = vals.length - 1;
+  const xl = [0, Math.round(last / 2), last].map(i => `<text x="${x(i)}" y="${H - 6}" text-anchor="${i === 0 ? "start" : i === last ? "end" : "middle"}">${labelFn(i)}</text>`).join("");
+  el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Line chart">${g}${xl}
+    <path d="${area}" fill="var(--accent)" fill-opacity="0.12"/>
+    <polyline points="${pts}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round"/>
+    <line id="lcx" class="grid-line" y1="${T}" y2="${H - B}" stroke-dasharray="3 3" style="display:none"/>
+    <circle id="lcd" r="4.5" fill="var(--accent)" stroke="var(--surface)" stroke-width="2" cx="${x(last)}" cy="${y(vals[last])}"/>
+    <text x="${x(last)}" y="${y(vals[last]) - 10}" text-anchor="end" class="ink" style="fill:var(--ink);font-weight:500">${fmt(vals[last])}</text>
+    <rect x="${L}" y="${T}" width="${W - L - R}" height="${H - T - B}" fill="transparent" id="lhit"/></svg>`;
+  const svg = $("svg", el), hit = $("#lhit", el), cx = $("#lcx", el), cd = $("#lcd", el);
+  hit.addEventListener("pointermove", e => {
+    const r = svg.getBoundingClientRect(); const px = (e.clientX - r.left) / r.width * W;
+    const i = Math.max(0, Math.min(last, Math.round((px - L) / (W - L - R) * last)));
+    cx.style.display = ""; cx.setAttribute("x1", x(i)); cx.setAttribute("x2", x(i)); cd.setAttribute("cx", x(i)); cd.setAttribute("cy", y(vals[i]));
+    showTip(e, `${labelFn(i)}: ${fmt(vals[i])}`);
+  });
+  hit.addEventListener("pointerleave", () => { hideTip(); cx.style.display = "none"; cd.setAttribute("cx", x(last)); cd.setAttribute("cy", y(vals[last])); });
+}
+function barChart(el, vals, labelFn) {
+  const W = 560, H = 190, L = 44, R = 18, T = 14, B = 26;
+  const max = Math.max(...vals), hi = Math.ceil(max / 2000) * 2000;
+  const bw = (W - L - R) / vals.length, y = v => T + (H - T - B) * (1 - v / hi);
+  const g = [0, hi / 2, hi].map(t => `<line class="grid-line" x1="${L}" x2="${W - R}" y1="${y(t)}" y2="${y(t)}"/><text x="${L - 6}" y="${y(t) + 3.5}" text-anchor="end">${fmt(t)}</text>`).join("");
+  const mi = vals.indexOf(max);
+  const bars = vals.map((v, i) => `<rect data-i="${i}" x="${(L + i * bw + 1).toFixed(1)}" y="${y(v).toFixed(1)}" width="${(bw - 2).toFixed(1)}" height="${(H - B - y(v)).toFixed(1)}" rx="2" fill="var(--accent)" fill-opacity="${i === mi ? 1 : 0.7}"/>`).join("");
+  const xl = [0, Math.floor(vals.length / 2), vals.length - 1].map(i => `<text x="${L + i * bw + bw / 2}" y="${H - 6}" text-anchor="${i === 0 ? "start" : i === vals.length - 1 ? "end" : "middle"}">${labelFn(i)}</text>`).join("");
+  el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Bar chart of daily views">${g}${bars}${xl}<text x="${Math.min(L + mi * bw + bw / 2, W - 40)}" y="${y(max) - 5}" text-anchor="middle" style="fill:var(--ink);font-weight:500">${fmt(max)}</text></svg>`;
+  $$("rect[data-i]", el).forEach(r => { r.addEventListener("pointermove", e => showTip(e, `${labelFn(+r.dataset.i)}: ${fmt(vals[+r.dataset.i])} views`)); r.addEventListener("pointerleave", hideTip); });
+}
+function renderCharts() {
+  const d = derived(), D = STATE.daily;
+  lineChart($("#chSubs"), D.subs, dayLabel);
+  $("#subsNote").textContent = `+${fmt(d.subsGain)} in ${d.n - 1} days`;
+  barChart($("#chViews"), d.dviews, i => short(addDays(D.start, i + 1)));
+  $("#viewsNote").textContent = `${fmt(d.viewsGain)} total`;
+}
+function renderVideos() {
+  const vs = STATE.videos, max = Math.max(...vs.map(v => v.views));
+  $("#vlist").innerHTML = vs.map(v => {
+    const age = Math.max(daysBetween(v.pub, STATE.asOf), 0);
+    const lr = v.views ? (v.likes / v.views * 100).toFixed(1) : "0.0", cr = v.views ? (v.comments / v.views * 1000).toFixed(1) : "0.0";
+    return `<div class="vrow">
+      <div><div class="t"><a href="https://www.youtube.com/watch?v=${esc(v.id)}" target="_blank" rel="noopener">${esc(v.title)}</a></div><div class="m">${short(v.pub)} · ${v.min.toFixed(0)} min · ${age === 0 ? "today" : age + " days old"}</div></div>
+      <div class="bar" title="${fmt(v.views)} views"><i class="${age < 7 ? "new" : ""}" style="width:${Math.max(v.views / max * 100, 1)}%"></i></div>
+      <div class="v">${fmt(v.views)}</div>
+      <div class="vstats"><span>${lr}% likes</span><span>${cr} comments per 1k views</span><span>${age > 0 ? fmt(v.views / age) + " views a day" : "first day"}</span></div>
+    </div>`;
+  }).join("");
+}
+function renderInsights() {
+  const vs = STATE.videos, tot = vs.reduce((s, v) => s + v.views, 0);
+  const top2 = [...vs].sort((a, b) => b.views - a.views).slice(0, 2), top2s = top2.reduce((s, v) => s + v.views, 0);
+  const course = vs.filter(v => /Intrusive/.test(v.title)), others = vs.filter(v => !/Intrusive/.test(v.title) && daysBetween(v.pub, STATE.asOf) >= 7);
+  const avg = a => a.reduce((s, v) => s + v.views, 0) / a.length;
+  const stale = ITEMS.filter(it => it.fmt === "long" && !itemState(it).date).length;
+  const unrep = COMMENTS.filter(c => c.tri !== "skip" && !commentDone(c)).length;
+  const L = [
+    {p:"High", cls:"crit", h:"Make your two biggest videos work harder", b:`${esc(top2[0].title)} (${fmt(top2[0].views)} views) and ${esc(top2[1].title)} (${fmt(top2[1].views)}) account for ${(top2s / tot * 100).toFixed(0)}% of views across your last ${vs.length} public videos. Their pinned comments predate the 50 threads pulled here, so it is unconfirmed whether they carry a Kit guide or the course link.`, act:`<b>Do this:</b> open both videos and check the description and pinned comment for the First 30 Days guide and the course. These two carry the most evergreen traffic.`, ev:"Source: VidIQ video stats, Oct 22"},
+    {p:"Test", cls:"warn", h:"Longer videos are leading, but only two data points", b:`Your two top performers run ${top2.map(v => v.min.toFixed(0)).join(" and ")} minutes. The 7 and 10 minute videos trail (${fmt(vs.find(v => v.id === "0sMx6by0NUE").views)} and ${fmt(vs.find(v => v.id === "Mg8IWEGUlrc").views)}), but the 8-minute "affair is really over" video sits at ${fmt(vs.find(v => v.id === "y6vDruqmMCQ").views)}, so topic is likely doing as much as length.`, act:`<b>Do this:</b> film your 20-25 minute porn video next to the 5-6 minute shorts and compare views per day at day 14.`, ev:"Pattern across 11 videos. Treat as a hypothesis."},
+    {p:"Funnel", cls:"acc", h:"Course-topic videos draw a smaller audience than your other uploads", b:`The two intrusive-thoughts videos average ${fmt(avg(course))} views against ${fmt(avg(others))} for the other ${others.length} videos older than a week. The people most likely to buy are probably already watching your remorse and apology videos.`, act:`<b>Do this:</b> move the course call-to-action into the high-traffic videos, and use the intrusive-thoughts videos as the second step.`, ev:"Hypothesis. The Funnel tab fills in once ThriveCart is connected."},
+    {p:"Queue", cls:"warn", h:`${stale} long scripts have no publish date`, b:`The highest-volume script in the queue, "Surviving Infidelity: The 4 Stages" (29,811 searches a month per your script), was drafted Aug 31 and is not dated. The holiday video needs to publish by about Nov 12 to meet Thanksgiving.`, act:`<b>Do this:</b> open Production and use "Suggest a schedule", then adjust.`, ev:"Source: Google Drive To Film folder"},
+    {p:"Replies", cls:"warn", h:`${unrep} comments are waiting for an answer`, b:`Most are from people in the first weeks after discovery, asking a direct question. Drafts are written for each, in your tone from your past replies.`, act:`<b>Do this:</b> open Comments and clear the "Reply" group first. About 20 minutes.`, ev:"Source: VidIQ, 50 most recent threads, Oct 8 to Oct 22"},
+    {p:"Low", cls:"", h:"Tag sets are copy-pasted", b:`Eleven recent videos share the same 12 tags, and the "4 Steps" video has none. Tags carry little weight on YouTube, so this is housekeeping, not a growth lever.`, act:`<b>Do this:</b> only if you are in VidIQ anyway. Skip otherwise.`, ev:"Source: VidIQ video tags"}
+  ];
+  $("#insights").innerHTML = L.map(i => `<div class="insight"><div><span class="pill ${i.cls}">${i.p}</span></div><div><h3>${i.h}</h3><p>${i.b}</p><p class="act">${i.act}</p><div class="ev">${i.ev}</div></div></div>`).join("");
+  $("#ideas").innerHTML = IDEAS.map(i => `<div class="item"><div class="ttl">"${esc(i.q)}"</div><div class="note">${esc(i.why)}</div><div class="muted" style="font-size:12px">From ${esc(i.from)}</div></div>`).join("");
+}
+
+/* ============================ PIPELINE ============================ */
+let pipeFilter = "all";
+function stageIdx(k) { return STAGES.findIndex(s => s.k === k); }
+function itemCard(it) {
+  const st = itemState(it), si = stageIdx(st.stage);
+  const seasonal = it.dueBy ? `<span class="pill warn">Publish by ${short(it.dueBy)}</span>` : "";
+  const stale = daysBetween(it.drafted, STATE.asOf) > 30 && si <= 1 ? `<span class="pill">Drafted ${daysBetween(it.drafted, STATE.asOf)} days ago</span>` : "";
+  return `<div class="item" data-id="${it.id}">
+    <div class="top1"><div class="ttl">${esc(it.title)}</div><div class="chips"><span class="pill ${it.fmt === "long" ? "acc" : ""}">${it.fmt === "long" ? "Long" : "Short"} · ${esc(it.len)}</span>${seasonal}${stale}</div></div>
+    <div class="note">${esc(it.note)}</div>
+    <div class="prog" aria-hidden="true">${[0,1,2,3,4,5].map(i => `<i class="${i <= si ? "on" : ""}"></i>`).join("")}</div>
+    <div class="ctl">
+      <label class="muted" style="font-size:12px">Stage <select data-act="stage">${STAGES.map(s => `<option value="${s.k}" ${s.k === st.stage ? "selected" : ""}>${s.l}</option>`).join("")}</select></label>
+      <label class="muted" style="font-size:12px">Publish <input type="date" data-act="date" value="${st.date || ""}"></label>
+      <a href="${DRIVE(it.doc)}" target="_blank" rel="noopener" style="font-size:13px">Open script</a>
+    </div></div>`;
+}
+function weekStarts() { const s = mondayOf(STATE.asOf), a = []; for (let i = 0; i < 9; i++) a.push(addDays(s, i * 7)); return a; }
+function renderPipeline() {
+  const open = ITEMS.filter(it => itemState(it).stage !== "published");
+  const filt = it => pipeFilter === "all" || it.fmt === pipeFilter;
+  /* stage strip */
+  $("#stageStrip").innerHTML = STAGES.map(s => {
+    const n = ITEMS.filter(it => itemState(it).stage === s.k).length;
+    return `<div class="stage-box ${n ? "has" : ""}"><div class="n">${n}</div><div class="l">${s.l}</div></div>`;
+  }).join("");
+  $("#pipeFilters").innerHTML = [["all","All"],["long","Long"],["short","Short"]].map(f => `<button class="chip" type="button" data-f="${f[0]}" aria-pressed="${pipeFilter === f[0]}">${f[1]}</button>`).join("");
+  /* weeks */
+  const ws = weekStarts(), target = 1;
+  const pubs = STATE.videos.map(v => ({kind:"pub", date:v.pub, v}));
+  let html = "";
+  ws.forEach((w, wi) => {
+    const end = addDays(w, 6);
+    const inWeek = d => d >= w && d <= end;
+    const sched = open.filter(it => filt(it) && itemState(it).date && inWeek(itemState(it).date)).sort((a, b) => itemState(a).date.localeCompare(itemState(b).date));
+    const pubd = wi === 0 ? pubs.filter(p => inWeek(p.date) && (pipeFilter === "all" || pipeFilter === "long")) : [];
+    const longs = sched.filter(it => it.fmt === "long").length + (wi === 0 ? pubd.length : 0);
+    let slots = pubd.map(p => `<div class="item pub"><div class="top1"><div class="ttl">${esc(p.v.title)}</div><div class="chips"><span class="pill good">Published ${short(p.date)}</span></div></div></div>`).join("");
+    slots += sched.map(itemCard).join("");
+    if (wi > 0 && longs < target && (pipeFilter !== "short")) slots += `<div class="open">Open slot: no long video dated this week. Pick one from "Needs a date" below.</div>`;
+    if (!slots) slots = `<div class="open">Nothing here.</div>`;
+    html += `<div class="week"><div class="wl">${short(w)} – ${short(end)}<small>${wi === 0 ? "This week" : "Week " + wi}</small></div><div class="slots">${slots}</div></div>`;
+  });
+  const later = open.filter(it => filt(it) && itemState(it).date && itemState(it).date > addDays(ws[ws.length - 1], 6));
+  if (later.length) html += `<div class="week"><div class="wl">Later</div><div class="slots">${later.map(itemCard).join("")}</div></div>`;
+  $("#weeks").innerHTML = html;
+  const und = open.filter(it => filt(it) && !itemState(it).date).sort((a, b) => (a.prio ?? 99) - (b.prio ?? 99));
+  $("#undated").innerHTML = und.length ? und.map(itemCard).join("") : `<div class="card muted">Every script has a date.</div>`;
+  renderBadges();
+}
+function renderBadges() {
+  const open = ITEMS.filter(it => itemState(it).stage !== "published").length;
+  $("#cPipe").textContent = open;
+  const w = COMMENTS.filter(c => c.tri !== "skip" && !commentDone(c)).length;
+  $("#cCom").textContent = w; $("#cCom").classList.toggle("alert", w > 0);
+  renderKpis();
+}
+function suggestPlan() {
+  const ws = weekStarts().slice(1);   /* next 8 weeks */
+  const used = new Set(ITEMS.filter(it => it.fmt === "long" && itemState(it).date).map(it => mondayOf(itemState(it).date)));
+  const free = ws.filter(w => !used.has(w)).map(w => {
+    let d = addDays(w, 3);                              /* Thursday */
+    if (d === "2026-11-26") d = "2026-11-25";           /* not Thanksgiving */
+    return d;
+  });
+  const pool = ITEMS.filter(it => it.fmt === "long" && !itemState(it).date && itemState(it).stage !== "published").sort((a, b) => (a.prio ?? 99) - (b.prio ?? 99));
+  const rows = [];
+  /* seasonal items first, into the slot nearest before their due date */
+  pool.filter(it => it.dueBy).forEach(it => {
+    const cands = free.filter(d => d <= it.dueBy); const d = cands.length ? cands[cands.length - 1] : free[0];
+    if (d) { rows.push({it, d}); free.splice(free.indexOf(d), 1); }
+  });
+  pool.filter(it => !it.dueBy).forEach(it => { const d = free.shift(); if (d) rows.push({it, d}); });
+  rows.sort((a, b) => a.d.localeCompare(b.d));
+  window.__plan = rows;
+  const left = pool.length - rows.length;
+  $("#planOut").innerHTML = `<div class="plan"><h3>Suggested long-video schedule</h3><p class="muted" style="font-size:13px;margin-top:4px">One long video per open week on Thursdays, seasonal first, then by search volume and audience fit. Dates are suggestions until you apply them.</p>
+    <div class="tblwrap"><table><thead><tr><th>Publish</th><th>Video</th><th>Why here</th></tr></thead><tbody>${rows.map(r => `<tr><td class="mono">${short(r.d)}</td><td>${esc(r.it.title)}</td><td class="muted">${esc(r.it.dueBy ? "Seasonal deadline " + short(r.it.dueBy) : r.it.note)}</td></tr>`).join("")}</tbody></table></div>
+    ${left > 0 ? `<p class="muted" style="font-size:12.5px;margin-top:6px">${left} more long script${left > 1 ? "s" : ""} won't fit in 8 weeks at one a week.</p>` : ""}
+    <div style="display:flex;gap:8px;margin-top:12px"><button class="btn primary" id="applyPlan" type="button">Apply these dates</button><button class="btn" id="dropPlan" type="button">Dismiss</button></div></div>`;
+}
+document.addEventListener("click", async e => {
+  const f = e.target.closest("[data-f]"); if (f) { pipeFilter = f.dataset.f; renderPipeline(); return; }
+  if (e.target.id === "planBtn") { suggestPlan(); return; }
+  if (e.target.id === "dropPlan") { $("#planOut").innerHTML = ""; return; }
+  if (e.target.id === "applyPlan") {
+    e.target.disabled = true;
+    for (const r of window.__plan || []) { await persist("pipeline", r.it.id, { ...itemState(r.it), date: r.d }); }
+    $("#planOut").innerHTML = ""; renderPipeline(); toast("Dates applied"); return;
+  }
+});
+document.addEventListener("change", async e => {
+  const card = e.target.closest(".item[data-id]"); if (!card) return;
+  const it = ITEMS.find(x => x.id === card.dataset.id), act = e.target.dataset.act; if (!it || !act) return;
+  const cur = itemState(it);
+  const next = act === "stage" ? { ...cur, stage: e.target.value } : { ...cur, date: e.target.value || null };
+  await persist("pipeline", it.id, next); renderPipeline();
+});
+
+/* ============================ COMMENTS ============================ */
+let cmFilter = "reply";
+const TRI = { reply: ["Reply", "acc"], care: ["Handle with care", "warn"], thanks: ["Quick thanks", "good"], skip: ["Skip or moderate", "crit"] };
+function renderComments() {
+  const counts = k => COMMENTS.filter(c => c.tri === k && !commentDone(c)).length;
+  const doneN = COMMENTS.filter(commentDone).length;
+  $("#cmFilters").innerHTML = ["reply","care","thanks","skip"].map(k => `<button class="chip" type="button" data-cf="${k}" aria-pressed="${cmFilter === k}">${TRI[k][0]} ${counts(k)}</button>`).join("") + `<button class="chip" type="button" data-cf="done" aria-pressed="${cmFilter === "done"}">Done ${doneN}</button>`;
+  $("#cmSub").textContent = "Un-replied threads from your 50 most recent comments (Oct 8 to Oct 22). Drafts are in your voice and meant to be edited. Replies post on YouTube, so the button opens each comment there.";
+  const list = COMMENTS.filter(c => cmFilter === "done" ? commentDone(c) : (c.tri === cmFilter && !commentDone(c)));
+  $("#cmList").innerHTML = list.length ? list.map(c => {
+    const t = TRI[c.tri], long = c.text.length > 260;
+    const url = `https://www.youtube.com/watch?v=${c.vid}&lc=${c.id}${c.t ? "&t=" + c.t + "s" : ""}`;
+    return `<div class="card cm ${commentDone(c) ? "done" : ""}" data-cid="${esc(c.id)}">
+      <header><span class="who">${esc(c.a)}</span><span class="pill ${t[1]}">${t[0]}</span><span class="muted mono" style="font-size:12px">${short(c.d)}${c.likes ? " · " + c.likes + " likes" : ""}</span></header>
+      <div class="vid">on ${esc(c.vt)}</div>
+      <div class="body ${long ? "clamp" : ""}">${esc(c.text)}</div>
+      ${long ? `<div><button class="btn small" data-act="more" type="button">Show all</button></div>` : ""}
+      ${c.note ? `<div class="note">${esc(c.note)}</div>` : ""}
+      ${(commentDraft(c) || c.tri !== "skip") ? `<div><label for="d-${esc(c.id)}">Suggested reply</label><textarea id="d-${esc(c.id)}" data-act="draft">${esc(commentDraft(c))}</textarea></div>` : ""}
+      ${c.alt ? `<div class="alt">${esc(c.alt)}</div>` : ""}
+      <div class="row">
+        <button class="btn primary small" data-act="copy" type="button">Copy reply</button>
+        <button class="btn small" data-act="redraft" type="button">Redraft with Claude</button>
+        <a class="btn small" href="${esc(url)}" target="_blank" rel="noopener" style="text-decoration:none;color:inherit;display:inline-flex;align-items:center">Open on YouTube</a>
+        <button class="btn small" data-act="done" type="button">${commentDone(c) ? "Move back" : "Mark done"}</button>
+        <span class="muted" style="font-size:12px" data-role="status"></span>
+      </div></div>`;
+  }).join("") : `<div class="card muted">Nothing in this group.</div>`;
+  renderBadges();
+}
+document.addEventListener("click", async e => {
+  const cf = e.target.closest("[data-cf]"); if (cf) { cmFilter = cf.dataset.cf; renderComments(); return; }
+  const btn = e.target.closest(".cm [data-act]"); if (!btn) return;
+  const card = btn.closest(".cm"), c = COMMENTS.find(x => x.id === card.dataset.cid), act = btn.dataset.act;
+  const ta = $("textarea", card), status = $("[data-role=status]", card);
+  if (act === "more") { $(".body", card).classList.remove("clamp"); btn.remove(); }
+  if (act === "copy") { copyText(ta ? ta.value : "", "Reply copied"); }
+  if (act === "done") { const d = !(saved.comments[c.id] && saved.comments[c.id].done); await persist("comments", c.id, { ...(saved.comments[c.id] || {}), done: d, draft: ta ? ta.value : commentDraft(c) }); renderComments(); }
+  if (act === "redraft") {
+    const sample = await use("sample");
+    if (!sample) { status.textContent = "Claude drafting isn't available in this view."; return; }
+    btn.disabled = true; status.textContent = "Thinking…";
+    const prompt = `Write one public YouTube reply for Wes White, a Chicago couples therapist who makes affair-recovery videos.
+Voice: warm, plain, concise (2 to 4 sentences). No jargon, no diagnosing, no promises, no lectures. Offer gentle general guidance only. If the commenter shares grief or crisis, validate briefly and give no advice. If the commenter is hostile, stay calm and hold your position without arguing.
+Mention a free resource only when it clearly fits, using its exact link:
+- First 30 Days After Discovery: ${LINKS.first30.url}
+- Should I Stay? guide: ${LINKS.shouldistay.url}
+- 5 Mistakes guide (both partners): ${LINKS.mistakes.url}
+Video: "${c.vt}"
+Commenter ${c.a} wrote:
+"""${c.text}"""
+${ta && ta.value ? "Current draft (write a different version):\n" + ta.value : ""}
+Reply with only the text of the reply.`;
+    try { const r = await sample(prompt, { cache: false, onText: u => { if (ta) ta.value = u.text; } }); if (ta) ta.value = r.text; status.textContent = "New draft ready. Edit before posting."; }
+    catch (err) { status.textContent = ({ not_granted: "Claude access was declined for this page.", rate_limited: "Too many requests. Try again in a minute." })[err.code] || "Couldn't draft that one. Your previous text is unchanged."; if (err.text == null && ta) ta.value = commentDraft(c); }
+    btn.disabled = false;
+  }
+});
+document.addEventListener("change", async e => {
+  if (e.target.matches(".cm textarea[data-act=draft]")) {
+    const c = COMMENTS.find(x => x.id === e.target.closest(".cm").dataset.cid);
+    await persist("comments", c.id, { ...(saved.comments[c.id] || {}), draft: e.target.value });
+  }
+});
+
+/* ============================ FUNNEL ============================ */
+function renderFunnel() {
+  const vs = STATE.videos, v30 = derived().viewsGain, subs = derived().subsGain;
+  const likes = vs.reduce((s, v) => s + v.likes, 0), cms = vs.reduce((s, v) => s + v.comments, 0);
+  const steps = [
+    {nm:"YouTube",val:fmt(v30),sub:`views, last 30 days · ${fmt(likes)} likes and ${fmt(cms)} comments on the last ${vs.length} videos`,src:"Live via VidIQ",on:true},
+    {nm:"Your website",val:"–",sub:"Squarespace visits, article views, waitlist page views",src:"Needs Google Analytics",on:false},
+    {nm:"Kit",val:"–",sub:"New subscribers by form and landing page",src:"Needs Kit connection",on:false},
+    {nm:"ThriveCart",val:"–",sub:"Checkout views and orders for the course",src:"Needs ThriveCart connection",on:false},
+    {nm:"Waitlist",val:"–",sub:"Squarespace form sign-ups",src:"Needs a GA event on the thank-you page",on:false}
+  ];
+  $("#flow").innerHTML = steps.map(s => `<div class="fstep ${s.on ? "" : "off"}"><div class="nm">${s.nm}</div><div class="val">${s.val}</div><div class="src">${s.sub}</div><div style="margin-top:8px"><span class="pill ${s.on ? "good" : ""}">${s.src}</span></div></div>`).join("");
+  const rows = vs.map(v => {
+    const keys = CTA_MAP[v.id];
+    return `<tr><td>${esc(v.title)}<div class="muted mono" style="font-size:11.5px">${short(v.pub)} · ${fmt(v.views)} views</div></td><td>${keys ? keys.map(k => `<div>${esc(LINKS[k].label)} <span class="pill">${LINKS[k].kind}</span></div>`).join("") : `<span class="muted">Not seen in recent comments</span>`}</td></tr>`;
+  }).join("");
+  $("#ctaTbl").innerHTML = `<thead><tr><th>Video</th><th>Call to action</th></tr></thead><tbody>${rows}</tbody>`;
+  $("#utmVideo").innerHTML = vs.map(v => `<option value="${v.id}">${esc(v.title)}</option>`).join("");
+  $("#utmBase").innerHTML = Object.entries(LINKS).map(([k, l]) => `<option value="${k}">${esc(l.label)}</option>`).join("");
+  utm();
+}
+function utm() {
+  const v = STATE.videos.find(x => x.id === $("#utmVideo").value), l = LINKS[$("#utmBase").value];
+  const slug = v.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40);
+  const u = l.url + (l.url.includes("?") ? "&" : "?") + `utm_source=youtube&utm_medium=${$("#utmMed").value}&utm_campaign=${slug}&utm_content=${v.id}`;
+  $("#utmOut").textContent = u;
+}
+["utmVideo","utmBase","utmMed"].forEach(id => $("#" + id).addEventListener("change", utm));
+$("#utmCopy").addEventListener("click", () => copyText($("#utmOut").textContent, "Link copied"));
+$("#copyPrompt").addEventListener("click", () => copyText($("#chatPrompt").textContent, "Prompt copied"));
+
+/* ============================ SOURCES ============================ */
+function renderSources() {
+  const rows = [
+    ["YouTube data (views, likes, comments, subscribers)","Connected","good","Live through VidIQ. Press Refresh to update.","Done"],
+    ["Script queue","Connected","good","Read from your Drive \"To Film\" folder at build time. Stages and dates you set are saved on this page.","Done"],
+    ["VidIQ keyword and opportunity data","Partly","warn","Available through the same connector (keyword research, outliers, subscriber insights). Not on this page yet.","Small"],
+    ["Your two Claude chats","Not readable","crit","No connector can read project chats. Use the table prompt on this page and keep the calendar in Notion.","Small"],
+    ["Google Analytics (Squarespace traffic)","Not connected","crit","GA4 has a reporting API, but there is no GA connector on your account. Squarespace form sign-ups reach GA4 only through a thank-you page event or Google Tag Manager.","Medium"],
+    ["Kit (subscribers by form and landing page)","Not connected","crit","Kit has a v4 API with API keys and OAuth for subscribers, tags and forms. I did not find documented stats endpoints, so per-form counts may need to be tallied from subscriber lists.","Medium"],
+    ["ThriveCart (checkout views, orders)","Not connected","crit","Webhooks and API keys sit under Settings, API and Webhooks. Zapier offers purchase triggers. I found no documentation of checkout-page view counts, so views may have to come from GA4 or ThriveCart's own reports.","Medium"]
+  ];
+  $("#srcTbl").innerHTML = `<thead><tr><th>Source</th><th>Status</th><th>What it takes</th><th>Effort</th></tr></thead><tbody>${rows.map(r => `<tr><td>${r[0]}</td><td><span class="pill ${r[2]}">${r[1]}</span></td><td class="muted">${r[3]}</td><td>${r[4]}</td></tr>`).join("")}</tbody>`;
+}
+
+/* ============================ LIVE REFRESH (VidIQ) ============================ */
+function decodeHtml(h) { const s = String(h || "").replace(/<br\s*\/?>/gi, "\n"); return new DOMParser().parseFromString(s, "text/html").body.textContent || ""; }
+function parseMin(iso) { const m = /PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/.exec(iso || ""); return m ? (+(m[1] || 0)) * 60 + (+(m[2] || 0)) + (+(m[3] || 0)) / 60 : 0; }
+const asObj = r => { const p = r && r.payload; if (typeof p === "string") { try { return JSON.parse(p); } catch (e) { return null; } } return p || null; };
+async function refreshLive() {
+  const btn = $("#refreshBtn"); btn.disabled = true; btn.textContent = "Refreshing…";
+  const mcp = await use("mcp");
+  if (!mcp) { toast("Live refresh isn't available in this view"); btn.disabled = false; btn.textContent = "Refresh from VidIQ"; return; }
+  const call = (tool, input) => mcp.callTool("VidIQ", tool, input);
+  const [vi, st, cm] = await Promise.allSettled([
+    call("vidiq_user_videos", { channelId: CHANNEL_ID, limit: 25, privacyStatus: ["public"] }),
+    call("vidiq_channel_stats", { channelId: CHANNEL_ID }),
+    call("vidiq_video_comments", { channelId: CHANNEL_ID, maxResult: 50, order: "time" })
+  ]);
+  const problems = [];
+  if (vi.status === "fulfilled") {
+    const o = asObj(vi.value);
+    if (o && Array.isArray(o.videos)) {
+      const longs = o.videos.filter(v => v.videoType === "long").slice(0, 11);
+      if (longs.length) STATE.videos = longs.map(v => ({ id: v.videoId, title: v.title, pub: v.publishedAt.slice(0, 10), views: v.viewCount, likes: v.likeCount, comments: v.commentCount, min: parseMin(v.duration) }));
+    }
+  } else problems.push("videos");
+  if (st.status === "fulfilled") {
+    const o = asObj(st.value);
+    if (o && Array.isArray(o.dailyStats) && o.dailyStats.length > 5) {
+      STATE.daily = { start: o.dailyStats[0].date, subs: o.dailyStats.map(d => d.subscribers), views: o.dailyStats.map(d => d.views) };
+    }
+  } else problems.push("channel stats");
+  if (cm.status === "fulfilled") {
+    const o = asObj(cm.value);
+    if (o && Array.isArray(o.comments)) {
+      const known = new Map(COMMENTS.map(c => [c.id, c]));
+      o.comments.forEach(t => {
+        const top = t.topComment || {}, ownerReplied = (t.replies || []).some(r => r.byChannelOwner);
+        const hit = known.get(t.commentId);
+        if (hit) { if (ownerReplied) hit.autoDone = true; return; }
+        if (top.byChannelOwner || ownerReplied) return;
+        COMMENTS.push({ id: t.commentId, vid: t.videoId, vt: t.videoTitle || "", a: top.author, d: (top.publishedAt || "").slice(0, 10), likes: top.likeCount || 0, tri: "reply", text: decodeHtml(top.text), draft: "", note: "New since the snapshot. Press \"Redraft with Claude\" to get a first draft." });
+      });
+    }
+  } else problems.push("comments");
+  STATE.asOf = iso(new Date());
+  $("#fresh").textContent = "Live: " + new Date().toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+  renderAll();
+  btn.disabled = false; btn.textContent = "Refresh from VidIQ";
+  const codes = [vi, st, cm].filter(r => r.status === "rejected").map(r => r.reason && r.reason.code);
+  toast(problems.length ? `Couldn't update ${problems.join(", ")}${codes[0] === "needs_reauth" ? ". Reconnect VidIQ in claude.ai Settings, Connectors." : codes[0] === "not_in_manifest" ? ". VidIQ access was declined for this page." : "."}` : "Updated from VidIQ");
+}
+$("#refreshBtn").addEventListener("click", refreshLive);
+
+/* ============================ TABS ============================ */
+const TABS = ["overview","pipeline","comments","funnel","sources"];
+function showTab(k) {
+  if (!TABS.includes(k)) k = "overview";
+  TABS.forEach(t => { $("#p-" + t).hidden = t !== k; });
+  $$(".tab").forEach(b => b.setAttribute("aria-selected", String(b.dataset.tab === k)));
+  scrollTo(0, 0);
+}
+$$(".tab").forEach(b => b.addEventListener("click", () => { try { history.replaceState(null, "", "#" + b.dataset.tab); } catch (e) {} showTab(b.dataset.tab); }));
+addEventListener("hashchange", () => showTab(location.hash.slice(1)));
+
+function renderAll() { renderKpis(); renderCharts(); renderVideos(); renderInsights(); renderPipeline(); renderComments(); renderFunnel(); renderSources(); }
+lsLoad();
+renderAll();
+showTab(location.hash.slice(1));
+initDb();
+</script>
