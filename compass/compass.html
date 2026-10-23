@@ -9,7 +9,7 @@
   --bg: #F1F3F8; --surface: #FFFFFF; --surface-2: #E7EAF2; --ink: #151B2D; --ink-2: #44506B; --ink-3: #5B6783;
   --line: #D5DAE6; --accent: #2D45D1; --accent-ink: #FFFFFF; --accent-soft: #E0E5FB;
   --good: #1D7443; --good-bg: #DDF0E5; --warn: #8F5A00; --warn-bg: #F7E8C8; --crit: #A93528; --crit-bg: #F6DAD5;
-  --c-work: #4A5A7A; --c-practice: #0F8A8A; --c-content: #7B4FD0; --c-people: #D1456B; --c-joy: #D98E00; --c-self: #2E9E5B; --c-space: #3E8FD0;
+  --c-work: #4A5A7A; --c-practice: #0F8A8A; --c-content: #7B4FD0; --c-people: #D1456B; --c-joy: #D98E00; --c-self: #2E9E5B; --c-space: #3E8FD0; --c-home: #A0643C;
   --font-display: "Schibsted Grotesk", "Avenir Next", "Segoe UI", sans-serif;
   --font-body: "Figtree", "Segoe UI", system-ui, sans-serif;
   --font-data: "JetBrains Mono", ui-monospace, Menlo, monospace;
@@ -19,7 +19,7 @@
     --bg: #0F1320; --surface: #171C2E; --surface-2: #21283D; --ink: #E8ECF7; --ink-2: #B5BED6; --ink-3: #8D98B5;
     --line: #2B3350; --accent: #8195FF; --accent-ink: #0B1030; --accent-soft: #232C5A;
     --good: #66D194; --good-bg: #173425; --warn: #E3AE55; --warn-bg: #3A2F15; --crit: #F28B7F; --crit-bg: #3B1E1A;
-    --c-work: #9AA9C9; --c-practice: #4FC9C9; --c-content: #B193F5; --c-people: #F07C9C; --c-joy: #FFC13D; --c-self: #5FD08D; --c-space: #6DB6F0;
+    --c-work: #9AA9C9; --c-practice: #4FC9C9; --c-content: #B193F5; --c-people: #F07C9C; --c-joy: #FFC13D; --c-self: #5FD08D; --c-space: #6DB6F0; --c-home: #D49A6A;
     color-scheme: dark;
   }
 }
@@ -27,7 +27,7 @@
   --bg: #0F1320; --surface: #171C2E; --surface-2: #21283D; --ink: #E8ECF7; --ink-2: #B5BED6; --ink-3: #8D98B5;
   --line: #2B3350; --accent: #8195FF; --accent-ink: #0B1030; --accent-soft: #232C5A;
   --good: #66D194; --good-bg: #173425; --warn: #E3AE55; --warn-bg: #3A2F15; --crit: #F28B7F; --crit-bg: #3B1E1A;
-  --c-work: #9AA9C9; --c-practice: #4FC9C9; --c-content: #B193F5; --c-people: #F07C9C; --c-joy: #FFC13D; --c-self: #5FD08D; --c-space: #6DB6F0;
+  --c-work: #9AA9C9; --c-practice: #4FC9C9; --c-content: #B193F5; --c-people: #F07C9C; --c-joy: #FFC13D; --c-self: #5FD08D; --c-space: #6DB6F0; --c-home: #D49A6A;
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
@@ -169,6 +169,8 @@ textarea { resize: vertical; min-height: 64px; }
 .b-cal { background: var(--ink-3); } .b-tk { background: var(--accent); }
 .hzl { font-family: var(--font-data); font-size: 11px; color: var(--ink-3); }
 .count.alert { background: var(--warn-bg); color: var(--warn); }
+.pill.acc { background: var(--accent-soft); color: var(--accent); }
+details > summary { list-style-position: inside; }
 </style>
 
 <div class="wrap">
@@ -196,13 +198,14 @@ const AREAS = [
   { id: "people", name: "People", cv: "--c-people" },
   { id: "joy", name: "Joy", cv: "--c-joy" },
   { id: "self", name: "Body & mind", cv: "--c-self" },
-  { id: "space", name: "Space", cv: "--c-space" }
+  { id: "space", name: "Space", cv: "--c-space" },
+  { id: "home", name: "Home & life", cv: "--c-home" }
 ];
 const AREA = Object.fromEntries(AREAS.map(a => [a.id, a]));
 AREA.work = AREA.build; AREA.practice = AREA.clients;
 const NOURISH = ["joy", "people", "self", "space"];
-const AREA_HELP = "build = building the practice (admin, marketing, website, courses, products, longer projects); clients = client work (session prep, notes review, continuing education, EFT supervision); content = YouTube/TikTok/writing; people = friends, partner, family; joy = fun and play; self = body and mind (exercise, mindfulness); space = creativity, silence, slowing down";
-const DEFAULTS = { capacity: 390, targets: { joy: 240, people: 240, self: 180, space: 180 }, values: ["Joy", "Gratitude", "Bravery", "Presence", "Relationships"], profile: "", calendars: [] };
+const AREA_HELP = "build = building the practice (admin, marketing, website, courses, products, longer projects); clients = client work (session prep, notes review, continuing education, EFT supervision); content = YouTube/TikTok/writing; people = friends, partner, family; joy = fun and play; self = body and mind (exercise, mindfulness); space = creativity, silence, slowing down; home = house, errands, money admin, cooking and logistics";
+const DEFAULTS = { capacity: 390, targets: { joy: 240, people: 240, self: 180, space: 180 }, values: ["Joy", "Gratitude", "Bravery", "Presence", "Relationships"], profile: "", calendars: [], ignore: ["toptal"] };
 
 const S = { tasks: {}, goals: {}, plans: {}, days: {}, habits: {}, people: {}, dates: {}, settings: { ...DEFAULTS }, coach: [] };
 let tab = "today", filter = "all", DB = null, SAMPLE = null, MCP = null, busy = false, pendingRender = false, draft = "", ctl = null, focusTimer = null, booted = {}, briefBusy = false, REV = null, gateReason = "";
@@ -260,7 +263,18 @@ async function boot() {
   }
   DB.doc("settings/main").onSnapshot(s => { S.settings = { ...DEFAULTS, ...(s.exists ? s.data() : {}) }; booted.settings = 1; schedule(); }, () => {});
   DB.doc("coach/log").onSnapshot(s => { if (!busy) { S.coach = (s.exists && s.data().messages) || []; if (tab === "coach") paintLog(); } }, () => {});
+  DB.collection("imports").onSnapshot(snap => snap.docs.forEach(d => { const x = d.data(); if (!x.applied) applyImport(d.id, x); }), () => {});
   syncCal();
+}
+const applying = {};
+async function applyImport(id, x) {
+  if (applying[id]) return; applying[id] = 1;
+  try {
+    for (const coll of ["goals", "tasks", "people", "dates", "habits", "days"]) for (const [k, v] of Object.entries(x[coll] || {})) await DB.doc(`${coll}/${k}`).set(clean(v));
+    for (const coll of Object.keys(x.delete || {})) for (const k of x.delete[coll]) await DB.doc(`${coll}/${k}`).delete();
+    await DB.doc(`imports/${id}`).update({ applied: true, appliedAt: Date.now() });
+    toast("Imported your plan.");
+  } catch (e) { applying[id] = 0; toast("The import hit a problem. Reload to retry."); }
 }
 
 /* ---------- calendar and email through the viewer's connectors ---------- */
@@ -278,6 +292,8 @@ function unwrap(r) {
 const fmtT = s => new Date(s).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 function normEv(e, cal) {
   if (!e || e.status === "cancelled" || !e.start) return null;
+  const hay = `${e.summary || ""} ${e.description || ""} ${e.location || ""}`.toLowerCase();
+  if ((S.settings.ignore || []).some(k => k && hay.includes(String(k).toLowerCase()))) return null;
   const allDay = !!e.start.date, s = allDay ? e.start.date.slice(0, 10) : e.start.dateTime, en = allDay ? (e.end && e.end.date ? e.end.date.slice(0, 10) : s) : (e.end && e.end.dateTime) || s;
   const days = [];
   if (allDay) { for (let d = s, n = 0; d < en && n < 14; d = addDays(d, 1), n++) days.push(d); if (!days.length) days.push(s); } else days.push(iso(new Date(s)));
@@ -299,13 +315,14 @@ async function syncCal() {
   schedule();
 }
 const eventsOn = d => CAL.events.filter(e => e.days.includes(d)).sort((a, b) => (a.allDay ? 0 : 1) - (b.allDay ? 0 : 1) || String(a.s).localeCompare(String(b.s)));
-const calBusy = d => CAL.events.filter(e => !e.allDay && !e.free && e.days.includes(d)).reduce((s, e) => s + e.mins, 0);
+const counts = e => !e.allDay && !e.free && e.mins >= 10 && !/reminder/i.test(e.title);
+const calBusy = d => CAL.events.filter(e => counts(e) && e.days.includes(d)).reduce((s, e) => s + e.mins, 0);
 function openWindow(d) {
   const lo = new Date(d + "T08:00:00"), hi = new Date(d + "T20:00:00"), busyEv = eventsOn(d).filter(e => !e.allDay && !e.free).map(e => [new Date(e.s), new Date(e.en)]).sort((a, b) => a[0] - b[0]);
   let cur = lo < new Date() && d === todayISO() ? new Date() : lo, best = null;
   for (const [s, e] of busyEv) { if (s > cur) { const g = s - cur; if (!best || g > best.g) best = { g, a: new Date(cur), b: s }; } if (e > cur) cur = e; }
   if (hi > cur) { const g = hi - cur; if (!best || g > best.g) best = { g, a: new Date(cur), b: hi }; }
-  return best && best.g >= 30 * 60000 ? { mins: Math.round(best.g / 60000), label: `${fmtT(best.a)}–${fmtT(best.b)}` } : null;
+  return best && best.g >= 30 * 60000 ? { mins: Math.round(best.g / 60000), label: `${fmtT(best.a)}–${fmtT(best.b)}`, start: hhmm(ceil15(best.a)) } : null;
 }
 function calStatusLine() {
   const st = CAL.status;
@@ -397,6 +414,7 @@ const all = () => Object.entries(S.tasks).map(([id, t]) => ({ id, ...t }));
 const open = () => all().filter(t => t.status === "open");
 const onDay = d => open().filter(t => t.day === d);
 const est = t => Number(t.est) || 30;
+const isBlocked = t => !!(t.after && S.tasks[t.after] && S.tasks[t.after].status === "open");
 function addTask(p) {
   const id = rid();
   const t = { title: "", area: "build", est: 30, day: "", focus: false, status: "open", goal: "", value: "", why: "", hard: false, deferCount: 0, created: Date.now(), ...p };
@@ -428,6 +446,7 @@ function score(t) {
   s += Math.min(t.deferCount || 0, 4) * 1.5;
   if (t.goal && S.goals[t.goal]) s += 2;
   if (t.hard) s += 1.5;
+  s += t.pri === 1 ? 2 : t.pri === 2 ? 0.5 : 0;
   if (NOURISH.includes(t.area)) s += nourishGap(t.area) > 0 ? 2.5 : 0;
   return s;
 }
@@ -473,7 +492,7 @@ document.addEventListener("focusout", () => { setTimeout(() => { if (pendingRend
 
 const areaPill = t => { const a = AREA[t.area] || AREA.work; return `<span class="pill area" style="--c:var(${a.cv})"><span class="dot" style="--c:var(${a.cv})"></span>${esc(a.name)}</span>`; };
 function metaOf(t) {
-  return `<div class="meta">${areaPill(t)}<span class="pill mono">${fmtM(est(t))}</span>${t.value ? `<span class="pill">${esc(t.value)}</span>` : ""}${t.hard ? '<span class="pill crit">hard conversation</span>' : ""}${t.deferCount >= 2 ? `<span class="pill warn">moved ${t.deferCount}×</span>` : ""}${t.due ? `<span class="pill ${t.due <= todayISO() ? "crit" : ""}">due ${dayName(t.due)}</span>` : ""}${t.example ? '<span class="pill">example</span>' : ""}</div>`;
+  return `<div class="meta">${areaPill(t)}<span class="pill mono">${fmtM(est(t))}</span>${t.value ? `<span class="pill">${esc(t.value)}</span>` : ""}${t.pri === 1 ? '<span class="pill crit">P1</span>' : ""}${isBlocked(t) ? `<span class="pill">waits on ${esc((S.tasks[t.after].title || "").slice(0, 28))}…</span>` : ""}${t.hard ? '<span class="pill crit">hard conversation</span>' : ""}${t.deferCount >= 2 ? `<span class="pill warn">moved ${t.deferCount}×</span>` : ""}${t.due ? `<span class="pill ${t.due <= todayISO() ? "crit" : ""}">due ${dayName(t.due)}</span>` : ""}${t.example ? '<span class="pill">example</span>' : ""}</div>`;
 }
 function row(t, o = {}) {
   const dn = t.status === "done";
@@ -489,7 +508,7 @@ function viewToday() {
   const nourish = tt.filter(t => NOURISH.includes(t.area)), nourishDone = doneToday.filter(t => NOURISH.includes(t.area));
   const rest = tt.filter(t => !t.focus);
   const L = dayLoad(T), cap = S.settings.capacity, total = L.done + L.plan, booked = calBusy(T), win = openWindow(T);
-  const pull = open().filter(t => t.day !== T).sort((a, b) => score(b) - score(a)).slice(0, 6);
+  const pull = open().filter(t => t.day !== T && !isBlocked(t)).sort((a, b) => score(b) - score(a)).slice(0, 6);
   const avoid = open().filter(needsGate);
   const h = new Date().getHours(), greet = h < 12 ? "Morning" : h < 18 ? "Afternoon" : "Evening";
   const slots = [0, 1, 2].map(i => {
@@ -511,7 +530,7 @@ function viewToday() {
     return `<div class="bal-row" style="--c:var(${a.cv})"><div class="top-line"><span><span class="dot" style="--c:var(${a.cv});display:inline-block;margin-right:6px"></span>${esc(a.name)}${behind ? ' <span class="pill warn">behind</span>' : ""}</span><span class="mono muted">${fmtM(w.done)}${w.plan ? ` + ${fmtM(w.plan)}` : ""}${tg ? ` / ${fmtM(tg)}` : ""}</span></div>
     <div class="meter" role="img" aria-label="${esc(a.name)} ${fmtM(w.done + w.plan)} this week"><i class="m-done" style="width:${(w.done / max) * 100}%"></i><i class="m-plan" style="width:${(w.plan / max) * 100}%"></i></div></div>`;
   }).join("");
-  const over = total > cap, packed = total + booked > 660;
+  const used = total + booked, over = used > cap, tight = !over && used > cap * 0.9, mxL = Math.max(cap, used, 1);
   const evs = eventsOn(T);
   const calCard = `<section class="card"><div class="sec-head"><h3>Today's calendar</h3><span class="muted" style="font-size:12px">${calStatusLine()}</span></div>
     ${evs.length ? `<div class="list">${evs.map(e => `<div class="trow" style="grid-template-columns:76px minmax(0,1fr)"><span class="mono muted" style="font-size:12px">${e.allDay ? "All day" : fmtT(e.s)}</span><span style="overflow-wrap:anywhere;${e.free ? "color:var(--ink-3)" : ""}">${esc(e.title)}${!e.allDay ? ` <span class="muted mono" style="font-size:12px">${fmtM(e.mins)}</span>` : ""}</span></div>`).join("")}</div>` : `<p class="empty-note">${CAL.status === "ok" ? "Nothing on the calendar today." : "Calendar not loaded yet."}</p>`}
@@ -541,11 +560,11 @@ function viewToday() {
       <div class="row-actions" style="margin-top:10px"><button class="btn small" data-act="ask" data-q="Close my day with me. Ask me how it went against my Big 3, what I avoided, and what I want tomorrow to protect." data-label="Close my day">Shut down with coach</button></div></section>
   </div><aside class="stack">
     ${calCard}
-    <section class="card"><div class="sec-head"><h3>Today's load</h3><span class="mono muted">${fmtM(total)} of ${fmtM(cap)}</span></div>
-      <div class="meter" style="--c:var(--accent)"><i class="m-done" style="width:${Math.min(100, (L.done / Math.max(cap, total)) * 100)}%"></i><i class="m-plan" style="width:${Math.min(100, (L.plan / Math.max(cap, total)) * 100)}%"></i></div>
-      <p class="muted" style="font-size:12px;margin-top:6px">Tasks only. Calendar time is counted separately.</p>
-      ${over ? `<div class="alert crit" style="margin-top:12px"><span><strong>${fmtM(total - cap)} over.</strong> Choosing now is kinder than failing at 6pm.</span><div class="row-actions"><button class="btn small" data-act="ask" data-q="My task plan today is over capacity. Make me choose: what comes off, and what am I afraid will happen if it does?">Help me cut</button></div></div>` : ""}
-      ${packed && !over ? `<div class="alert" style="margin-top:12px"><span><strong>${fmtM(total + booked)} booked plus planned.</strong> There is no space in this day. Where does the silence go?</span><div class="row-actions"><button class="btn small" data-act="ask" data-q="Today is packed from calendar plus tasks. Help me protect real space in it, and tell me what I'm afraid will happen if I leave room.">Protect space</button></div></div>` : ""}</section>
+    <section class="card"><div class="sec-head"><h3>Today's load</h3><span class="mono muted">${fmtM(used)} of ${fmtM(cap)}</span></div>
+      <div class="meter" style="--c:var(--accent)"><i class="b-cal" style="width:${(booked / mxL) * 100}%"></i><i class="m-done" style="width:${(L.done / mxL) * 100}%"></i><i class="m-plan" style="width:${(L.plan / mxL) * 100}%"></i></div>
+      <div class="legend" style="margin-top:6px"><span><i class="lg cal"></i>Calendar ${fmtM(booked)}</span><span><i class="lg tk"></i>Tasks ${fmtM(total)}</span></div>
+      ${over ? `<div class="alert crit" style="margin-top:12px"><span><strong>${fmtM(used - cap)} over.</strong> Calendar and tasks together are more than a day holds. Choosing now is kinder than failing at 6pm.</span><div class="row-actions"><button class="btn small" data-act="ask" data-q="My day is over capacity (calendar plus tasks). Make me choose: what comes off or moves, and what am I afraid will happen if it does?" data-label="Help me cut">Help me cut</button></div></div>` : ""}
+      ${tight ? `<div class="alert" style="margin-top:12px"><span><strong>Almost no margin.</strong> Where does the space go today?</span><div class="row-actions"><button class="btn small" data-act="ask" data-q="Today is nearly full. Help me protect real space in it, and tell me what I'm afraid will happen if I leave room." data-label="Protect space">Protect space</button></div></div>` : ""}</section>
     ${habits ? `<section class="card"><div class="sec-head"><h3>Daily goals</h3><button class="btn small ghost" data-act="habits">Manage</button></div><div class="bal">${habits}</div></section>` : `<section class="card"><div class="sec-head"><h3>Daily goals</h3></div><p class="empty-note">Micro-workouts and small daily targets, like 300 push-ups in sets of 50. They count toward your weekly body time.</p><button class="btn small" data-act="habits">Add a daily goal</button></section>`}
     <section class="card"><div class="sec-head"><h3>Week balance</h3><p>Done + planned vs target</p></div><div class="bal">${bal}</div></section>
     <section class="card"><div class="sec-head"><h3>Avoidance radar</h3></div>${avoid.length ? `<div class="stack" style="gap:10px">${avoid.slice(0, 4).map(t => `<div class="alert"><span><strong>${esc(t.title)}</strong><br>${t.deferCount ? `Moved ${t.deferCount}×.` : ""} ${t.hard ? "Hard conversation." : ""}</span><div class="row-actions"><button class="btn small" data-act="focus" data-id="${t.id}">Just 10 minutes</button><button class="btn small" data-act="askTask" data-id="${t.id}">Ask coach</button><button class="btn small ghost" data-act="someday" data-id="${t.id}">Drop it</button></div></div>`).join("")}</div>` : `<p class="empty-note">Nothing is being dodged right now.</p>`}</section>
@@ -564,12 +583,12 @@ function viewHorizon() {
     const ds = Object.values(S.dates).map(dt => ({ dt, p: S.people[dt.person], occ: occIn(dt.md, ws, days[6]) })).filter(x => x.occ);
     weeks.push({ ws, info, dues, gs, allday, ds });
   }
-  const mx = Math.max(660, ...weeks.flatMap(w => w.info.map(i => i.cal + i.task)));
+  const mx = Math.max(cap, ...weeks.flatMap(w => w.info.map(i => i.cal + i.task)));
   return `<div class="stack"><div class="sec-head"><div><h2>Horizon</h2><p>The next eight weeks: calendar, scheduled tasks, deadlines, goal dates.</p></div><div class="row-actions"><span class="muted" style="font-size:12px">${calStatusLine()}</span><button class="btn small" data-act="syncCal">Sync</button></div></div>
   ${dueNoDay.length ? `<section class="card"><div class="sec-head"><h3>Due, but not scheduled</h3><p>These have a deadline and no day.</p></div><div class="list">${dueNoDay.slice(0, 8).map(t => row(t, { today: true, tmrw: true })).join("")}</div></section>` : ""}
-  <div class="legend"><span><i class="lg cal"></i>Calendar</span><span><i class="lg tk"></i>Tasks</span><span><i class="lg lim"></i>11h line</span></div>
+  <div class="legend"><span><i class="lg cal"></i>Calendar</span><span><i class="lg tk"></i>Tasks</span><span><i class="lg lim"></i>Over capacity</span></div>
   ${weeks.map((w, i) => `<section class="card"><div class="sec-head"><h3>${i === 0 ? "This week" : "Week of " + dayName(w.ws)}</h3><p class="mono">${fmtM(w.info.reduce((s, x) => s + x.cal, 0))} booked · ${fmtM(w.info.reduce((s, x) => s + x.task, 0))} planned</p></div>
-    <div class="hz">${w.info.map(x => { const tot = x.cal + x.task; return `<div class="hzc ${x.d === T ? "today" : ""}" title="${dayName(x.d)}: ${fmtM(x.cal)} calendar, ${fmtM(x.task)} tasks"><div class="hzbar ${tot > 660 ? "over" : ""}"><i class="b-tk" style="height:${(x.task / mx) * 100}%"></i><i class="b-cal" style="height:${(x.cal / mx) * 100}%"></i></div><span class="hzl">${new Date(x.d + "T12:00:00").toLocaleDateString(undefined, { weekday: "narrow" })}${new Date(x.d + "T12:00:00").getDate()}</span></div>`; }).join("")}</div>
+    <div class="hz">${w.info.map(x => { const tot = x.cal + x.task; return `<div class="hzc ${x.d === T ? "today" : ""}" title="${dayName(x.d)}: ${fmtM(x.cal)} calendar, ${fmtM(x.task)} tasks"><div class="hzbar ${tot > cap ? "over" : ""}"><i class="b-tk" style="height:${(x.task / mx) * 100}%"></i><i class="b-cal" style="height:${(x.cal / mx) * 100}%"></i></div><span class="hzl">${new Date(x.d + "T12:00:00").toLocaleDateString(undefined, { weekday: "narrow" })}${new Date(x.d + "T12:00:00").getDate()}</span></div>`; }).join("")}</div>
     ${w.dues.length || w.gs.length || w.allday.length || w.ds.length ? `<div class="list" style="margin-top:8px">${w.ds.map(x => `<div class="trow" style="grid-template-columns:76px minmax(0,1fr)"><span class="pill warn">Date</span><span>${esc(x.p ? x.p.name : "?")}: ${esc(x.dt.label)} <span class="muted mono">${dayName(x.occ)}</span></span></div>`).join("")}${w.gs.map(g => `<div class="trow" style="grid-template-columns:76px minmax(0,1fr)"><span class="pill acc">Goal</span><span>${esc(g.title)} <span class="muted mono">${dayName(g.target)}</span></span></div>`).join("")}${w.dues.map(t => `<div class="trow" style="grid-template-columns:76px minmax(0,1fr)"><span class="mono muted" style="font-size:12px">${dayName(t.due)}</span><span class="tt" data-act="edit" data-id="${t.id}">${esc(t.title)} ${areaPill(t)}</span></div>`).join("")}${w.allday.slice(0, 4).map(t => `<div class="trow" style="grid-template-columns:76px minmax(0,1fr)"><span class="mono muted" style="font-size:12px">All day</span><span>${esc(t)}</span></div>`).join("")}</div>` : `<p class="empty-note">Nothing with a deadline this week.</p>`}</section>`).join("")}</div>`;
 }
 
@@ -585,24 +604,34 @@ function viewPlan() {
   return `<div class="stack"><div class="sec-head"><h2>Plan</h2><div class="row-actions"><button class="btn" data-act="dump" data-mode="import">Import notes</button><button class="btn" data-act="scanMail">Scan email</button><button class="btn primary" data-act="new">${ico("plus")}New task</button></div></div>${chips}
     <section class="card"><div class="sec-head"><h3>Inbox</h3><p>No day yet. Decide, schedule, or drop.</p></div>${inbox.length ? `<div class="list">${inbox.map(t => row(t, { today: true, tmrw: true })).join("")}</div>` : `<p class="empty-note">Inbox zero for this filter.</p>`}</section>
     ${days.map(d => `<section class="card"><div class="sec-head"><h3>${d === T ? "Today" : d === addDays(T, 1) ? "Tomorrow" : dayName(d)}</h3><p class="mono">${fmtM(sched.filter(t => t.day === d).reduce((s, t) => s + est(t), 0))}</p></div><div class="list">${sched.filter(t => t.day === d).map(t => row(t)).join("")}</div></section>`).join("")}
-    ${some.length ? `<section class="card"><div class="sec-head"><h3>Someday</h3><p>Parked on purpose.</p></div><div class="list">${some.map(t => row(t, { today: true })).join("")}</div></section>` : ""}
+    ${some.length ? `<section class="card"><div class="sec-head"><h3>Someday</h3><p>Parked on purpose.</p></div><div class="list">${some.slice(0, 10).map(t => row(t, { today: true })).join("")}</div>${some.length > 10 ? `<p class="empty-note">…and ${some.length - 10} more. Open Goals to see them by project.</p>` : ""}</section>` : ""}
     ${recent.length ? `<section class="card"><div class="sec-head"><h3>Recently done</h3></div><div class="list">${recent.map(t => row(t)).join("")}</div></section>` : ""}</div>`;
 }
 
+const goalTasks = id => all().filter(t => t.goal === id);
 function goalStats(id) {
-  const ts = all().filter(t => t.goal === id), d = ts.filter(t => t.status === "done").length;
-  const nxt = ts.filter(t => t.status === "open").sort((a, b) => (a.day || "9").localeCompare(b.day || "9") || a.created - b.created)[0];
-  return { total: ts.length, done: d, next: nxt };
+  const ts = goalTasks(id), d = ts.filter(t => t.status === "done").length;
+  const nxt = ts.filter(t => t.status === "open" && !isBlocked(t)).sort((a, b) => (a.pri || 9) - (b.pri || 9) || (a.day || a.due || "9").localeCompare(b.day || b.due || "9") || (a.created || 0) - (b.created || 0))[0];
+  return { total: ts.length, done: d, next: nxt, later: ts.filter(t => t.status === "someday").length };
+}
+function grow(t) {
+  const dn = t.status === "done";
+  return `<div class="trow ${dn ? "done" : ""}"><button class="chk ${dn ? "on" : ""}" data-act="done" data-id="${t.id}" aria-label="${dn ? "Reopen" : "Mark done"}">${ico("check")}</button><div style="min-width:0"><div class="tt" data-act="edit" data-id="${t.id}">${esc(t.title)}</div><div class="meta">${t.pri ? `<span class="pill ${t.pri === 1 ? "crit" : ""}">P${t.pri}</span>` : ""}${t.due ? `<span class="pill ${t.due <= todayISO() && !dn ? "crit" : ""}">${esc(dayName(t.due))}</span>` : ""}${isBlocked(t) ? `<span class="pill">waits on ${esc((S.tasks[t.after].title || "").slice(0, 30))}…</span>` : ""}${t.day && t.status === "open" ? `<span class="pill acc">scheduled ${esc(dayName(t.day))}</span>` : ""}${t.hard ? '<span class="pill crit">hard conversation</span>' : ""}</div></div><div class="acts">${t.status === "open" && !isBlocked(t) && t.day !== todayISO() ? `<button class="btn small" data-act="day" data-id="${t.id}" data-d="${todayISO()}">Today</button>` : ""}${t.status === "someday" ? `<button class="btn small" data-act="activate" data-id="${t.id}">Activate</button>` : ""}</div></div>`;
 }
 function viewGoals() {
-  const hz = { quarter: "This quarter", year: "This year", life: "Long-term" };
-  const gs = Object.entries(S.goals).map(([id, g]) => ({ id, ...g })).sort((a, b) => ["quarter", "year", "life"].indexOf(a.horizon) - ["quarter", "year", "life"].indexOf(b.horizon));
-  return `<div class="stack"><div class="sec-head"><div><h2>Goals</h2><p>Every goal needs a visible next step, or it is only a wish.</p></div><button class="btn primary" data-act="newGoal">${ico("plus")}New goal</button></div>
-    ${gs.length ? gs.map(g => { const st = goalStats(g.id), a = AREA[g.area] || AREA.work, P = proposals[g.id];
+  const hz = { quarter: "This quarter", year: "This year", life: "Long-term" }, order = ["quarter", "year", "life"];
+  const gs = Object.entries(S.goals).map(([id, g]) => ({ id, ...g })).sort((a, b) => (a.parked ? 1 : 0) - (b.parked ? 1 : 0) || order.indexOf(a.horizon) - order.indexOf(b.horizon) || (a.target || "9").localeCompare(b.target || "9"));
+  return `<div class="stack"><div class="sec-head"><div><h2>Goals</h2><p>Each goal is a project: phases, priorities, dependencies, and one visible next step.</p></div><button class="btn primary" data-act="newGoal">${ico("plus")}New goal</button></div>
+    ${gs.length ? gs.map(g => { const st = goalStats(g.id), a = AREA[g.area] || AREA.build, P = proposals[g.id], ts = goalTasks(g.id).sort((x, y) => (x.created || 0) - (y.created || 0));
+      const groups = {}; ts.forEach(t => { const k = t.status === "someday" ? "Later" : (t.phase || "Tasks"); (groups[k] = groups[k] || []).push(t); });
+      const keys = [...(g.phases || []), ...Object.keys(groups).filter(k => !(g.phases || []).includes(k) && k !== "Later"), "Later"].filter(k => groups[k]);
+      const pct = st.total ? (st.done / st.total) * 100 : 0;
       return `<article class="card goal" style="--c:var(${a.cv})"><div class="gt"><div style="min-width:0"><div class="eyebrow">${hz[g.horizon] || ""}${g.target ? ` · by ${dayName(g.target)}` : ""}</div><div class="gh">${esc(g.title)}</div>${g.why ? `<p class="muted" style="font-size:14px">${esc(g.why)}</p>` : ""}</div><div class="row-actions"><button class="btn small" data-act="editGoal" data-id="${g.id}">Edit</button></div></div>
-      <div class="meta">${areaPill({ area: g.area })}<span class="pill mono">${st.done}/${st.total} steps</span>${g.example ? '<span class="pill">example</span>' : ""}</div>
-      ${st.next ? `<div class="next"><span><span class="eyebrow">Next step</span><br>${esc(st.next.title)} <span class="muted mono">${fmtM(est(st.next))}</span></span><span class="row-actions"><button class="btn small" data-act="day" data-id="${st.next.id}" data-d="${todayISO()}">Do today</button></span></div>` : `<div class="alert crit"><span><strong>No next step.</strong> This goal is stalled until you define one.</span></div>`}
-      ${P ? (P.loading ? '<p class="muted">Coach is breaking it down…</p>' : P.error ? `<p class="muted">${esc(P.error)}</p>` : `<div class="prop"><div class="eyebrow">Proposed steps${P.cadence ? ` · ${esc(P.cadence)}` : ""}</div>${P.steps.map((s, i) => `<label><input type="checkbox" data-prop="${g.id}" data-i="${i}" checked> <span>${esc(s.title)} <span class="muted mono">${fmtM(s.est)} · ${esc((AREA[s.area] || AREA.work).name)}</span></span></label>`).join("")}<div class="row-actions" style="margin-top:6px"><button class="btn small primary" data-act="addProp" data-id="${g.id}">Add checked to inbox</button><button class="btn small ghost" data-act="dismissProp" data-id="${g.id}">Dismiss</button></div></div>`) : ""}
+      <div class="meta">${areaPill({ area: g.area })}<span class="pill mono">${st.done}/${st.total} steps</span>${st.later ? `<span class="pill">${st.later} later</span>` : ""}${g.parked ? '<span class="pill warn">parked</span>' : ""}${g.example ? '<span class="pill">example</span>' : ""}</div>
+      <div class="meter" style="--c:var(--good)" role="img" aria-label="${Math.round(pct)}% done"><i class="m-done" style="width:${pct}%"></i></div>
+      ${g.parked ? `<div class="next"><span><span class="eyebrow">Parked</span><br>Not active right now. Activate a step when it's time.</span></div>` : st.next ? `<div class="next"><span><span class="eyebrow">Next step</span><br>${esc(st.next.title)} <span class="muted mono">${fmtM(est(st.next))}</span></span><span class="row-actions"><button class="btn small" data-act="day" data-id="${st.next.id}" data-d="${todayISO()}">Do today</button></span></div>` : st.total && st.done === st.total ? `<div class="alert" style="background:var(--good-bg);color:var(--good)"><span><strong>All steps done.</strong></span></div>` : `<div class="alert crit"><span><strong>No next step.</strong> This goal is stalled until you define one.</span></div>`}
+      ${keys.length ? `<details><summary style="cursor:pointer;font-weight:600;font-size:14px">Project plan (${ts.length})</summary><div class="stack" style="gap:14px;margin-top:10px">${keys.map(k => { const g2 = groups[k], dn = g2.filter(t => t.status === "done").length; return `<div><div class="eyebrow" style="margin-bottom:4px">${esc(k)} · ${dn}/${g2.length}</div><div class="list">${g2.map(grow).join("")}</div></div>`; }).join("")}</div></details>` : ""}
+      ${P ? (P.loading ? '<p class="muted">Coach is breaking it down…</p>' : P.error ? `<p class="muted">${esc(P.error)}</p>` : `<div class="prop"><div class="eyebrow">Proposed steps${P.cadence ? ` · ${esc(P.cadence)}` : ""}</div>${P.steps.map((s, i) => `<label><input type="checkbox" data-prop="${g.id}" data-i="${i}" checked> <span>${esc(s.title)} <span class="muted mono">${fmtM(s.est)} · ${esc((AREA[s.area] || AREA.build).name)}</span></span></label>`).join("")}<div class="row-actions" style="margin-top:6px"><button class="btn small primary" data-act="addProp" data-id="${g.id}">Add checked to inbox</button><button class="btn small ghost" data-act="dismissProp" data-id="${g.id}">Dismiss</button></div></div>`) : ""}
       <div class="row-actions"><button class="btn small" data-act="breakdown" data-id="${g.id}">Break it down</button><button class="btn small" data-act="askGoal" data-id="${g.id}">Challenge this goal</button></div></article>`; }).join("") : `<div class="card"><p class="empty-note">No goals yet. Add the long-term thing you keep circling, then break it down into steps small enough to schedule.</p></div>`}</div>`;
 }
 
@@ -629,7 +658,7 @@ function snapshotText() {
   const days = Object.entries(S.days).sort().slice(-7).map(([d, v]) => `${d}: went well=${v.win || "-"}; grateful=${v.grat || "-"}`);
   const cal = [...Array(7)].map((_, i) => addDays(T, i)).map(d => { const es = eventsOn(d).filter(e => !/birthday/i.test(e.title)); return es.length ? `${d}: ${es.map(e => e.allDay ? `all day ${e.title}` : `${fmtT(e.s)}-${fmtT(e.en)} ${e.title}`).join("; ")}` : ""; }).filter(Boolean);
   const habits = Object.entries(S.habits).map(([id, h]) => `${h.title}: ${(day.h || {})[id] || 0}/${h.target} ${h.unit || ""} today`);
-  return [`TODAY: ${T} (${new Date().toLocaleDateString(undefined, { weekday: "long" })}). Task capacity ${fmtM(S.settings.capacity)} (Wes set this high on purpose; treat it as optimistic), planned today ${fmtM(L.done + L.plan)} (${fmtM(L.done)} done). Calendar booked today ${fmtM(calBusy(T))}.`,
+  return [`TODAY: ${T} (${new Date().toLocaleDateString(undefined, { weekday: "long" })}). Daily capacity ${fmtM(S.settings.capacity)} covers tasks AND counted calendar time (Wes set it high on purpose; treat it as optimistic). Today: ${fmtM(L.done + L.plan)} of tasks (${fmtM(L.done)} done) plus ${fmtM(calBusy(T))} calendar = ${fmtM(L.done + L.plan + calBusy(T))}.`,
     `CALENDAR, NEXT 7 DAYS (${CAL.status === "ok" ? "synced" : "not synced"}):\n${cal.join("\n") || "(nothing or not synced)"}`,
     `WEEK INTENTION: ${(S.plans["w-" + ws] || {}).text || "(none)"}  MONTH FOCUS: ${(S.plans["m-" + T.slice(0, 7)] || {}).text || "(none)"}  MIND DUMPED TODAY: ${day.dumped ? "yes" : "no"}`,
     `TODAY'S TASKS:\n${o.filter(t => t.day === T).map(line).join("\n") || "(none)"}`,
@@ -646,7 +675,7 @@ function systemText() {
   return `You are the planning coach inside Wes White's personal task manager. Wes is a psychotherapist in Chicago (about 70% couples) who is building his private practice and a content business (daily TikTok, weekly YouTube) with a long-term goal of replacing his income with digital products and becoming a speaker, author and trainer. He expects to build toward about five face-to-face client sessions a day. ${S.settings.profile || ""}
 Areas: ${AREA_HELP}.
 Wes's values: ${S.settings.values.join(", ")}. He wants to be braver in conflict, more decisive, more present, and to protect joy, friends, body and space (creativity, silence, slowing down) from being swallowed by work. Treat protecting space as part of the job: when a day or week is packed, push back on that too, and ask what he is afraid will happen if he leaves room.
-How to coach: be direct, warm and brief (under 150 words unless asked). Ask ONE sharp question at a time. Push at a moderate level: challenge motives (why this, why now, what is the cost of skipping, what are you afraid could happen), name avoidance without lecturing, but ALWAYS respect an override. If Wes gives a logistical, timing or relevance reason to do something else, accept it and help him re-plan; do not re-litigate. Treat him as an expert; no moral lectures. Offer concrete options and recommend one. Do not cite research unless you can name the primary source, and say when something is clinical consensus rather than evidence. Use tools to act only after Wes agrees: add_task, schedule_task (day plus optional Big 3), set_plan (week or month focus). Wes also wants to get better at keeping in touch with friends and at remembering birthdays and anniversaries (his brother, sister, parents, and Brooke above all) and acting weeks ahead: brainstorm, buy, book dinner, send a card. When these come up, give specific, thoughtful gift and plan ideas drawn from the notes you have, and ask one question about the person if the notes are thin. Keep it warm, never transactional. Never invent task ids.`;
+How to coach: be direct, warm and brief (under 150 words unless asked). Ask ONE sharp question at a time. Push at a moderate level: challenge motives (why this, why now, what is the cost of skipping, what are you afraid could happen), name avoidance without lecturing, but ALWAYS respect an override. If Wes gives a logistical, timing or relevance reason to do something else, accept it and help him re-plan; do not re-litigate. Treat him as an expert; no moral lectures. Offer concrete options and recommend one. Do not cite research unless you can name the primary source, and say when something is clinical consensus rather than evidence. Use tools to act only after Wes agrees: add_task, schedule_task (day plus optional Big 3), set_plan (week or month focus). Wes also wants to get better at keeping in touch with friends and at remembering birthdays and anniversaries (his brother, sister, parents, and Brooke above all) and acting weeks ahead: brainstorm, buy, book dinner, send a card. When these come up, give specific, thoughtful gift and plan ideas drawn from the notes you have, and ask one question about the person if the notes are thin. Keep it warm, never transactional. Never mention his former employer. Never invent task ids.`;
 }
 async function ask(q, label) {
   if (busy) return;
@@ -704,9 +733,10 @@ function editTask(id, preset) {
   <div class="row-actions"><button class="btn small" data-act="setfday" data-d="${todayISO()}">Today</button><button class="btn small" data-act="setfday" data-d="${addDays(todayISO(), 1)}">Tomorrow</button><button class="btn small" data-act="setfday" data-d="">No day</button></div>
   <div class="two"><div class="field"><label for="f-goal">Goal</label><select id="f-goal">${opts([["", "None"], ...Object.entries(S.goals).map(([k, g]) => [k, g.title])], t.goal || "")}</select></div>
   <div class="field"><label for="f-value">Value it serves</label><select id="f-value">${opts([["", "None"], ...S.settings.values.map(v => [v, v])], t.value || "")}</select></div></div>
+  <div class="field"><label for="f-pri">Priority</label><select id="f-pri">${opts([["", "None"], ["1", "P1 · critical or time-sensitive"], ["2", "P2 · important"], ["3", "P3 · later"]], String(t.pri || ""))}</select></div>
   <div class="field"><label for="f-why">Why does this matter? (the coach will ask)</label><textarea id="f-why">${esc(t.why || "")}</textarea></div>
   <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="f-hard" ${t.hard ? "checked" : ""}> A hard conversation or something I'm tempted to avoid</label>
-  <div class="row-actions" style="justify-content:space-between"><span class="row-actions"><button class="btn primary" data-act="saveTask" data-id="${id || ""}">Save</button><button class="btn" data-act="close">Cancel</button></span><span class="row-actions">${id ? `<button class="btn" data-act="askTask" data-id="${id}">Ask coach</button><button class="btn" data-act="someday" data-id="${id}">Someday</button><button class="btn danger" data-act="delTask" data-id="${id}">Delete</button>` : ""}</span></div>`);
+  <div class="row-actions" style="justify-content:space-between"><span class="row-actions"><button class="btn primary" data-act="saveTask" data-id="${id || ""}">Save</button><button class="btn" data-act="close">Cancel</button></span><span class="row-actions">${id ? `<button class="btn" data-act="calSheet" data-id="${id}">Put on calendar</button><button class="btn" data-act="askTask" data-id="${id}">Ask coach</button><button class="btn" data-act="someday" data-id="${id}">Someday</button><button class="btn danger" data-act="delTask" data-id="${id}">Delete</button>` : ""}</span></div>`);
 }
 function editGoal(id) {
   const g = id ? S.goals[id] : { title: "", area: "build", horizon: "quarter", why: "", target: "" };
@@ -716,6 +746,7 @@ function editGoal(id) {
   <div class="field"><label for="g-hz">Horizon</label><select id="g-hz">${opts([["quarter", "This quarter"], ["year", "This year"], ["life", "Long-term"]], g.horizon)}</select></div></div>
   <div class="field"><label for="g-target">Target date (optional)</label><input type="date" id="g-target" value="${esc(g.target || "")}"></div>
   <div class="field"><label for="g-why">Why does this matter to you?</label><textarea id="g-why">${esc(g.why || "")}</textarea></div>
+  <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="g-parked" ${g.parked ? "checked" : ""}> Park this project (keep it, stop calling it stalled)</label>
   <div class="row-actions"><button class="btn primary" data-act="saveGoal" data-id="${id || ""}">Save</button><button class="btn" data-act="close">Cancel</button>${id ? `<button class="btn danger" data-act="delGoal" data-id="${id}">Delete</button>` : ""}</div>`);
 }
 function settingsSheet() {
@@ -725,6 +756,7 @@ function settingsSheet() {
   <div class="eyebrow">Weekly hours to protect</div>
   <div class="two">${NOURISH.map(a => `<div class="field"><label for="s-${a}">${esc(AREA[a].name)}</label><input type="number" id="s-${a}" min="0" max="40" step="0.5" value="${(s.targets[a] || 0) / 60}"></div>`).join("")}</div>
   <div class="field"><label>Calendars to read</label><div class="prop" id="callist"><span class="muted">Loading your calendars…</span></div><p class="muted" style="font-size:12px">With none checked, only your primary calendar is read.</p></div>
+  <div class="field"><label for="s-ignore">Ignore calendar events containing (comma separated)</label><input type="text" id="s-ignore" value="${esc((s.ignore || []).join(", "))}"></div>
   <div class="field"><label for="s-values">Values (comma separated)</label><input type="text" id="s-values" value="${esc(s.values.join(", "))}"></div>
   <div class="field"><label for="s-profile">Anything else the coach should know about you</label><textarea id="s-profile" rows="5">${esc(s.profile || "")}</textarea></div>
   <div class="row-actions"><button class="btn primary" data-act="saveSettings">Save</button><button class="btn" data-act="close">Cancel</button>${all().some(t => t.example) || Object.values(S.goals).some(g => g.example) ? '<button class="btn danger" data-act="clearEx">Clear example data</button>' : ""}</div>`, "wide");
@@ -883,6 +915,30 @@ function addPeopleRev() {
   closeLayer(); const made = ensureDateTasks(); toast(`${n} added${made ? `, ${made} planning tasks created` : ""}.`);
 }
 
+const hhmm = d => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+const ceil15 = d => { const x = new Date(d); x.setMinutes(Math.ceil(x.getMinutes() / 15) * 15, 0, 0); return x; };
+const localIso = d => `${iso(d)}T${hhmm(d)}:00`;
+function calSheet(id, dateOverride) {
+  const t = S.tasks[id]; if (!t) return;
+  const d = dateOverride || (t.day && t.day >= todayISO() ? t.day : todayISO()), w = openWindow(d), evs = eventsOn(d).filter(e => !e.allDay);
+  const mins = [15, 30, 45, 60, 90, 120, 180, 240].includes(est(t)) ? est(t) : 60;
+  sheet(`<div class="eyebrow">Nothing goes on your calendar until you press the button</div><h2>${esc(t.title)}</h2>
+  <div class="two"><div class="field"><label for="c-date">Day</label><input type="date" id="c-date" data-id="${id}" value="${d}"></div><div class="field"><label for="c-time">Start</label><input type="time" id="c-time" value="${w ? w.start : "09:00"}"></div></div>
+  <div class="field"><label for="c-dur">Length</label><select id="c-dur">${opts([15, 30, 45, 60, 90, 120, 180, 240].map(m => [String(m), fmtM(m)]), String(mins))}</select></div>
+  <div class="field"><label>Already on ${esc(dayName(d))}</label>${evs.length ? `<div class="list">${evs.map(e => `<div class="trow" style="grid-template-columns:130px minmax(0,1fr)"><span class="mono muted" style="font-size:12px">${fmtT(e.s)}–${fmtT(e.en)}</span><span style="overflow-wrap:anywhere">${esc(e.title)}</span></div>`).join("")}</div>` : `<p class="empty-note">${CAL.status === "ok" ? "Nothing booked." : "Calendar not synced, so I can't show conflicts."}</p>`}${w ? `<p class="muted" style="font-size:13px">Longest open window: ${fmtM(w.mins)} (${esc(w.label)}). The start time is prefilled from it.</p>` : ""}</div>
+  <div class="row-actions"><button class="btn primary" data-act="calAdd" data-id="${id}">Add to calendar</button><button class="btn" data-act="close">Cancel</button></div>`);
+}
+async function createEvent(id) {
+  const t = S.tasks[id], date = $("#c-date").value, time = $("#c-time").value, dur = Number($("#c-dur").value) || 30;
+  if (!date || !time) return toast("Pick a day and a start time.");
+  const m = await mcp(); if (!m) return toast("Open this page in claude.ai to add events.");
+  const s = new Date(`${date}T${time}:00`), e = new Date(s.getTime() + dur * 60000);
+  try {
+    await m.callTool("Google Calendar", "create_event", { summary: t.title, startTime: localIso(s), endTime: localIso(e), description: "Added from Daily Compass" });
+    store.patch("tasks", id, { day: date, onCal: true }); closeLayer(); toast("Added to your calendar."); syncCal();
+  } catch (err) { toast(err && err.code === "not_granted" ? "Calendar write access was declined." : "Could not add the event."); }
+}
+
 /* ---------- events ---------- */
 document.addEventListener("click", e => {
   const el = e.target.closest("[data-act]"); if (!el) return;
@@ -904,7 +960,7 @@ document.addEventListener("click", e => {
   else if (a === "setfday") { $("#f-day").value = el.dataset.d; }
   else if (a === "saveTask") {
     const title = $("#f-title").value.trim(); if (!title) return toast("Give it a title.");
-    const p = { title, area: $("#f-area").value, est: Number($("#f-est").value), day: $("#f-day").value, due: $("#f-due").value, goal: $("#f-goal").value, value: $("#f-value").value, why: $("#f-why").value.trim(), hard: $("#f-hard").checked };
+    const p = { title, area: $("#f-area").value, est: Number($("#f-est").value), day: $("#f-day").value, due: $("#f-due").value, goal: $("#f-goal").value, value: $("#f-value").value, why: $("#f-why").value.trim(), hard: $("#f-hard").checked, pri: Number($("#f-pri").value) || 0 };
     if (id) store.patch("tasks", id, p); else addTask(p);
     closeLayer();
   }
@@ -913,7 +969,7 @@ document.addEventListener("click", e => {
   else if (a === "delGoal") { Object.entries(S.tasks).forEach(([k, t]) => { if (t.goal === id) store.patch("tasks", k, { goal: "" }); }); store.del("goals", id); closeLayer(); }
   else if (a === "saveGoal") {
     const title = $("#g-title").value.trim(); if (!title) return toast("Name the goal.");
-    const g = { ...(id ? S.goals[id] : {}), title, area: $("#g-area").value, horizon: $("#g-hz").value, target: $("#g-target").value, why: $("#g-why").value.trim() };
+    const g = { ...(id ? S.goals[id] : {}), title, area: $("#g-area").value, horizon: $("#g-hz").value, target: $("#g-target").value, why: $("#g-why").value.trim(), parked: $("#g-parked").checked };
     store.set("goals", id || rid(), g); closeLayer();
   }
   else if (a === "breakdown") breakdown(id);
@@ -949,6 +1005,9 @@ document.addEventListener("click", e => {
   else if (a === "importPeople") peopleImportSheet();
   else if (a === "sortPeople") sortPeople();
   else if (a === "addPeopleRev") addPeopleRev();
+  else if (a === "calSheet") calSheet(id);
+  else if (a === "calAdd") createEvent(id);
+  else if (a === "activate") store.patch("tasks", id, { status: "open" });
   else if (a === "brief") makeBrief();
   else if (a === "dump") dumpSheet(el.dataset.mode);
   else if (a === "sortDump") sortDump(el.dataset.mode);
@@ -977,7 +1036,7 @@ document.addEventListener("click", e => {
   else if (a === "saveSettings") {
     const num = k => Math.max(0, Number($("#s-" + k).value) || 0) * 60, cl = $("#callist");
     const cals = cl && cl.dataset.loaded ? [...cl.querySelectorAll("[data-cal]")].filter(c => c.checked).map(c => c.dataset.cal) : (S.settings.calendars || []);
-    store.set("settings", "main", { ...S.settings, capacity: num("cap") || 390, targets: Object.fromEntries(NOURISH.map(k => [k, num(k)])), values: $("#s-values").value.split(",").map(v => v.trim()).filter(Boolean), profile: $("#s-profile").value.trim(), calendars: cals });
+    store.set("settings", "main", { ...S.settings, capacity: num("cap") || 390, targets: Object.fromEntries(NOURISH.map(k => [k, num(k)])), values: $("#s-values").value.split(",").map(v => v.trim()).filter(Boolean), profile: $("#s-profile").value.trim(), calendars: cals, ignore: $("#s-ignore").value.split(",").map(v => v.trim()).filter(Boolean) });
     closeLayer(); toast("Saved."); syncCal();
   }
   else if (a === "clearEx") {
@@ -987,7 +1046,7 @@ document.addEventListener("click", e => {
   }
 });
 document.addEventListener("change", e => {
-  const el = e.target, k = el.dataset.save; if (!k) return;
+  const el = e.target; if (el.id === "c-date") return calSheet(el.dataset.id, el.value); const k = el.dataset.save; if (!k) return;
   if (k === "week") store.set("plans", "w-" + weekStart(), { text: el.value.trim(), at: Date.now() });
   if (k === "day") store.set("days", todayISO(), { ...(S.days[todayISO()] || {}), [el.dataset.f]: el.value.trim() });
 });
