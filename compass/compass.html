@@ -168,6 +168,7 @@ textarea { resize: vertical; min-height: 64px; }
 .hzbar i { display: block; width: 100%; }
 .b-cal { background: var(--ink-3); } .b-tk { background: var(--accent); }
 .hzl { font-family: var(--font-data); font-size: 11px; color: var(--ink-3); }
+.count.alert { background: var(--warn-bg); color: var(--warn); }
 </style>
 
 <div class="wrap">
@@ -203,7 +204,7 @@ const NOURISH = ["joy", "people", "self", "space"];
 const AREA_HELP = "build = building the practice (admin, marketing, website, courses, products, longer projects); clients = client work (session prep, notes review, continuing education, EFT supervision); content = YouTube/TikTok/writing; people = friends, partner, family; joy = fun and play; self = body and mind (exercise, mindfulness); space = creativity, silence, slowing down";
 const DEFAULTS = { capacity: 390, targets: { joy: 240, people: 240, self: 180, space: 180 }, values: ["Joy", "Gratitude", "Bravery", "Presence", "Relationships"], profile: "", calendars: [] };
 
-const S = { tasks: {}, goals: {}, plans: {}, days: {}, habits: {}, settings: { ...DEFAULTS }, coach: [] };
+const S = { tasks: {}, goals: {}, plans: {}, days: {}, habits: {}, people: {}, dates: {}, settings: { ...DEFAULTS }, coach: [] };
 let tab = "today", filter = "all", DB = null, SAMPLE = null, MCP = null, busy = false, pendingRender = false, draft = "", ctl = null, focusTimer = null, booted = {}, briefBusy = false, REV = null, gateReason = "";
 const CAL = { events: [], status: "idle", at: 0 };
 const proposals = {};
@@ -254,7 +255,7 @@ async function boot() {
   lsLoad();
   DB = (window.claude && window.claude.use) ? await window.claude.use("db").catch(() => null) : null;
   if (!DB) { render(); syncCal(); return; }
-  for (const coll of ["tasks", "goals", "plans", "days", "habits"]) {
+  for (const coll of ["tasks", "goals", "plans", "days", "habits", "people", "dates"]) {
     DB.collection(coll).onSnapshot(snap => { S[coll] = {}; snap.docs.forEach(d => { S[coll][d.id] = d.data(); }); booted[coll] = 1; schedule(); }, () => {});
   }
   DB.doc("settings/main").onSnapshot(s => { S.settings = { ...DEFAULTS, ...(s.exists ? s.data() : {}) }; booted.settings = 1; schedule(); }, () => {});
@@ -405,6 +406,7 @@ function complete(id) {
   const t = S.tasks[id]; if (!t) return;
   if (t.status === "done") return store.patch("tasks", id, { status: "open", doneAt: 0 });
   store.patch("tasks", id, { status: "done", doneAt: Date.now(), day: t.day || todayISO() });
+  if (t.person && S.people[t.person]) store.patch("people", t.person, { last: todayISO() });
   toast(["Done.", "Nice, that one's off your mind.", "Moved. Notice how that feels."][Math.floor(Math.random() * 3)]);
 }
 function toggleBig(id) {
@@ -457,14 +459,15 @@ function render() {
   const view = $("#view"), ae = document.activeElement;
   if (view.contains(ae) && /INPUT|TEXTAREA|SELECT/.test(ae.tagName)) { pendingRender = true; return; }
   pendingRender = false;
+  ensureTick();
   $("#dateline").textContent = new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
   $("#capArea").innerHTML = AREAS.map(a => `<option value="${a.id}">${esc(a.name)}</option>`).join("");
   const inbox = open().filter(t => !t.day).length;
-  $("#tabs").innerHTML = [["today", "Today"], ["plan", "Plan"], ["horizon", "Horizon"], ["goals", "Goals"], ["coach", "Coach"]].map(([k, l]) =>
-    `<button class="tab" role="tab" aria-selected="${tab === k}" data-act="tab" data-k="${k}">${l}${k === "plan" && inbox ? `<span class="count">${inbox}</span>` : ""}</button>`).join("") +
+  $("#tabs").innerHTML = [["today", "Today"], ["plan", "Plan"], ["horizon", "Horizon"], ["people", "People"], ["goals", "Goals"], ["coach", "Coach"]].map(([k, l]) =>
+    `<button class="tab" role="tab" aria-selected="${tab === k}" data-act="tab" data-k="${k}">${l}${k === "plan" && inbox ? `<span class="count">${inbox}</span>` : k === "people" && peopleDueCount() ? `<span class="count alert">${peopleDueCount()}</span>` : ""}</button>`).join("") +
     `<button class="tab" style="margin-left:auto" data-act="settings" aria-label="Settings">${ico("gear")}</button>`;
   if (tab === "coach") { if (!view.querySelector("#log")) viewCoach(view); return; }
-  view.innerHTML = tab === "today" ? viewToday() : tab === "plan" ? viewPlan() : tab === "horizon" ? viewHorizon() : viewGoals();
+  view.innerHTML = tab === "today" ? viewToday() : tab === "plan" ? viewPlan() : tab === "horizon" ? viewHorizon() : tab === "people" ? viewPeople() : viewGoals();
 }
 document.addEventListener("focusout", () => { setTimeout(() => { if (pendingRender) render(); }, 0); });
 
@@ -529,6 +532,7 @@ function viewToday() {
       <div class="row-actions" style="margin-top:10px"><button class="btn ${day.dumped ? "" : "primary"} small" data-act="dump" data-mode="daily">${day.dumped ? "Dump more" : "Start 5-minute dump"}</button><button class="btn small" data-act="dump" data-mode="import">Import notes</button><button class="btn small" data-act="scanMail">Scan email for tasks</button><button class="btn small" data-act="ask" data-q="Let's work the backlog. Look at my inbox and unscheduled tasks, tell me what to drop, what to schedule this week, and what is really a goal in disguise. One question first." data-label="Work the backlog">Work the backlog</button></div></section>
     <section><div class="sec-head"><h2>Big 3</h2><p>Three at most. Everything else is a bonus.</p></div><div class="big3">${slots}</div></section>
     <section>${joyBlock}</section>
+    ${keepCardHtml()}${comingCardHtml()}
     <section class="card"><div class="sec-head"><h3>Also today</h3><p>${rest.length} open</p></div>${rest.length ? `<div class="list">${rest.map(t => row(t)).join("")}</div>` : `<p class="empty-note">Nothing else scheduled. Pull something from below if you have room.</p>`}</section>
     <section class="card"><div class="sec-head"><h3>Pull in next</h3><p>Ranked by due date, goals, things you keep moving, and what your week is missing.</p></div>${pull.length ? `<div class="list">${pull.map(t => row(t, { today: true, tmrw: true })).join("")}</div>` : `<p class="empty-note">The inbox is empty. Capture something above.</p>`}</section>
     <section class="card"><div class="sec-head"><h3>Close the day</h3><p>Two lines. Presence and gratitude, on purpose.</p></div>
@@ -557,7 +561,8 @@ function viewHorizon() {
     const dues = open().filter(t => t.due && t.due >= ws && t.due <= days[6]).sort((a, b) => a.due.localeCompare(b.due));
     const gs = Object.values(S.goals).filter(g => g.target && g.target >= ws && g.target <= days[6]);
     const allday = [...new Set(days.flatMap(d => eventsOn(d).filter(e => e.allDay && !/birthday/i.test(e.title)).map(e => e.title)))];
-    weeks.push({ ws, info, dues, gs, allday });
+    const ds = Object.values(S.dates).map(dt => ({ dt, p: S.people[dt.person], occ: occIn(dt.md, ws, days[6]) })).filter(x => x.occ);
+    weeks.push({ ws, info, dues, gs, allday, ds });
   }
   const mx = Math.max(660, ...weeks.flatMap(w => w.info.map(i => i.cal + i.task)));
   return `<div class="stack"><div class="sec-head"><div><h2>Horizon</h2><p>The next eight weeks: calendar, scheduled tasks, deadlines, goal dates.</p></div><div class="row-actions"><span class="muted" style="font-size:12px">${calStatusLine()}</span><button class="btn small" data-act="syncCal">Sync</button></div></div>
@@ -565,7 +570,7 @@ function viewHorizon() {
   <div class="legend"><span><i class="lg cal"></i>Calendar</span><span><i class="lg tk"></i>Tasks</span><span><i class="lg lim"></i>11h line</span></div>
   ${weeks.map((w, i) => `<section class="card"><div class="sec-head"><h3>${i === 0 ? "This week" : "Week of " + dayName(w.ws)}</h3><p class="mono">${fmtM(w.info.reduce((s, x) => s + x.cal, 0))} booked · ${fmtM(w.info.reduce((s, x) => s + x.task, 0))} planned</p></div>
     <div class="hz">${w.info.map(x => { const tot = x.cal + x.task; return `<div class="hzc ${x.d === T ? "today" : ""}" title="${dayName(x.d)}: ${fmtM(x.cal)} calendar, ${fmtM(x.task)} tasks"><div class="hzbar ${tot > 660 ? "over" : ""}"><i class="b-tk" style="height:${(x.task / mx) * 100}%"></i><i class="b-cal" style="height:${(x.cal / mx) * 100}%"></i></div><span class="hzl">${new Date(x.d + "T12:00:00").toLocaleDateString(undefined, { weekday: "narrow" })}${new Date(x.d + "T12:00:00").getDate()}</span></div>`; }).join("")}</div>
-    ${w.dues.length || w.gs.length || w.allday.length ? `<div class="list" style="margin-top:8px">${w.gs.map(g => `<div class="trow" style="grid-template-columns:76px minmax(0,1fr)"><span class="pill acc">Goal</span><span>${esc(g.title)} <span class="muted mono">${dayName(g.target)}</span></span></div>`).join("")}${w.dues.map(t => `<div class="trow" style="grid-template-columns:76px minmax(0,1fr)"><span class="mono muted" style="font-size:12px">${dayName(t.due)}</span><span class="tt" data-act="edit" data-id="${t.id}">${esc(t.title)} ${areaPill(t)}</span></div>`).join("")}${w.allday.slice(0, 4).map(t => `<div class="trow" style="grid-template-columns:76px minmax(0,1fr)"><span class="mono muted" style="font-size:12px">All day</span><span>${esc(t)}</span></div>`).join("")}</div>` : `<p class="empty-note">Nothing with a deadline this week.</p>`}</section>`).join("")}</div>`;
+    ${w.dues.length || w.gs.length || w.allday.length || w.ds.length ? `<div class="list" style="margin-top:8px">${w.ds.map(x => `<div class="trow" style="grid-template-columns:76px minmax(0,1fr)"><span class="pill warn">Date</span><span>${esc(x.p ? x.p.name : "?")}: ${esc(x.dt.label)} <span class="muted mono">${dayName(x.occ)}</span></span></div>`).join("")}${w.gs.map(g => `<div class="trow" style="grid-template-columns:76px minmax(0,1fr)"><span class="pill acc">Goal</span><span>${esc(g.title)} <span class="muted mono">${dayName(g.target)}</span></span></div>`).join("")}${w.dues.map(t => `<div class="trow" style="grid-template-columns:76px minmax(0,1fr)"><span class="mono muted" style="font-size:12px">${dayName(t.due)}</span><span class="tt" data-act="edit" data-id="${t.id}">${esc(t.title)} ${areaPill(t)}</span></div>`).join("")}${w.allday.slice(0, 4).map(t => `<div class="trow" style="grid-template-columns:76px minmax(0,1fr)"><span class="mono muted" style="font-size:12px">All day</span><span>${esc(t)}</span></div>`).join("")}</div>` : `<p class="empty-note">Nothing with a deadline this week.</p>`}</section>`).join("")}</div>`;
 }
 
 function viewPlan() {
@@ -634,13 +639,14 @@ function snapshotText() {
     `WEEK BALANCE (done+planned vs weekly target): ${AREAS.map(a => `${a.name} ${fmtM(wk[a.id].done + wk[a.id].plan)}${S.settings.targets[a.id] ? "/" + fmtM(S.settings.targets[a.id]) : ""}`).join("; ")}`,
     `DAILY GOALS: ${habits.join("; ") || "(none)"}`,
     `GOALS:\n${Object.entries(S.goals).map(([id, g]) => { const s = goalStats(id); return `(${id}) ${g.title} [${g.horizon}, ${(AREA[g.area] || AREA.build).name}] ${s.done}/${s.total} steps, next step: ${s.next ? s.next.title : "NONE"}${g.why ? ", why: " + g.why : ""}`; }).join("\n") || "(none)"}`,
+    peopleSnapshot(),
     `RECENT REFLECTIONS:\n${days.join("\n") || "(none)"}`].join("\n\n");
 }
 function systemText() {
   return `You are the planning coach inside Wes White's personal task manager. Wes is a psychotherapist in Chicago (about 70% couples) who is building his private practice and a content business (daily TikTok, weekly YouTube) with a long-term goal of replacing his income with digital products and becoming a speaker, author and trainer. He expects to build toward about five face-to-face client sessions a day. ${S.settings.profile || ""}
 Areas: ${AREA_HELP}.
 Wes's values: ${S.settings.values.join(", ")}. He wants to be braver in conflict, more decisive, more present, and to protect joy, friends, body and space (creativity, silence, slowing down) from being swallowed by work. Treat protecting space as part of the job: when a day or week is packed, push back on that too, and ask what he is afraid will happen if he leaves room.
-How to coach: be direct, warm and brief (under 150 words unless asked). Ask ONE sharp question at a time. Push at a moderate level: challenge motives (why this, why now, what is the cost of skipping, what are you afraid could happen), name avoidance without lecturing, but ALWAYS respect an override. If Wes gives a logistical, timing or relevance reason to do something else, accept it and help him re-plan; do not re-litigate. Treat him as an expert; no moral lectures. Offer concrete options and recommend one. Do not cite research unless you can name the primary source, and say when something is clinical consensus rather than evidence. Use tools to act only after Wes agrees: add_task, schedule_task (day plus optional Big 3), set_plan (week or month focus). Never invent task ids.`;
+How to coach: be direct, warm and brief (under 150 words unless asked). Ask ONE sharp question at a time. Push at a moderate level: challenge motives (why this, why now, what is the cost of skipping, what are you afraid could happen), name avoidance without lecturing, but ALWAYS respect an override. If Wes gives a logistical, timing or relevance reason to do something else, accept it and help him re-plan; do not re-litigate. Treat him as an expert; no moral lectures. Offer concrete options and recommend one. Do not cite research unless you can name the primary source, and say when something is clinical consensus rather than evidence. Use tools to act only after Wes agrees: add_task, schedule_task (day plus optional Big 3), set_plan (week or month focus). Wes also wants to get better at keeping in touch with friends and at remembering birthdays and anniversaries (his brother, sister, parents, and Brooke above all) and acting weeks ahead: brainstorm, buy, book dinner, send a card. When these come up, give specific, thoughtful gift and plan ideas drawn from the notes you have, and ask one question about the person if the notes are thin. Keep it warm, never transactional. Never invent task ids.`;
 }
 async function ask(q, label) {
   if (busy) return;
@@ -753,6 +759,130 @@ function startFocus(id) {
   focusTimer = setInterval(paint, 500); focusTimer && (window.__extend = () => { end += 10 * 60000; });
 }
 
+/* ---------- people: keep in touch, birthdays and anniversaries ---------- */
+const CADENCE = [[0, "No reminders"], [7, "Weekly"], [14, "Every 2 weeks"], [30, "Monthly"], [60, "Every 2 months"], [90, "Quarterly"]];
+const RELS = [["friend", "Friend"], ["family", "Family"], ["partner", "Partner"], ["other", "Other"]];
+const LEVELS = [["full", "Full: brainstorm, buy, book dinner, card"], ["family", "Family: brainstorm, order, mail card, call"], ["light", "Light: card or text"]];
+const levelFor = rel => rel === "partner" ? "full" : rel === "family" ? "family" : "light";
+const daysBetween = (a, b) => Math.round((new Date(b + "T12:00:00") - new Date(a + "T12:00:00")) / 864e5);
+function stepsFor(level, label, name) {
+  const L = label.toLowerCase();
+  if (level === "full") return [[-28, `Brainstorm gift ideas for ${name}'s ${L}`, 30], [-18, `Buy or order ${name}'s gift`, 60], [-14, `Book dinner or plan the day for ${name}'s ${L}`, 30], [-5, `Write the card and wrap ${name}'s gift`, 45], [-1, `Confirm tomorrow's plans for ${name}`, 10]];
+  if (level === "family") return [[-21, `Brainstorm a gift for ${name}'s ${L}`, 30], [-12, `Order ${name}'s gift and a card`, 45], [-6, `Mail or hand-deliver ${name}'s card`, 15], [0, `Call or text ${name} for their ${L}`, 15]];
+  return [[-5, `Pick a card or write a note for ${name}'s ${L}`, 20], [0, `Text or call ${name}: happy ${L}`, 10]];
+}
+function nextOcc(md, from) { const T = from || todayISO(); const y = Number(T.slice(0, 4)); const d = `${y}-${md}`; return d < T ? `${y + 1}-${md}` : d; }
+function occIn(md, a, b) { for (const y of new Set([a.slice(0, 4), b.slice(0, 4)])) { const d = `${y}-${md}`; if (d >= a && d <= b) return d; } return null; }
+function personDue(p) { return p.cadence ? addDays(p.last || addDays(todayISO(), -p.cadence), p.cadence) : null; }
+function duePeople(within) { const lim = addDays(todayISO(), within || 0); return Object.entries(S.people).map(([id, p]) => ({ id, p, due: personDue(p) })).filter(x => x.due && x.due <= lim).sort((a, b) => a.due.localeCompare(b.due)); }
+const peopleDueCount = () => duePeople(0).length;
+function upcomingDates(days) {
+  const T = todayISO();
+  return Object.entries(S.dates).map(([id, dt]) => { const ev = nextOcc(dt.md); return { id, dt, person: S.people[dt.person], ev, n: daysBetween(T, ev) }; }).filter(x => x.n <= days).sort((a, b) => a.n - b.n);
+}
+let ensured = "";
+function ensureTick() {
+  const T = todayISO(); if (ensured === T) return;
+  if (DB && !(booted.tasks && booted.dates && booted.people)) return;
+  ensured = T; ensureDateTasks();
+}
+function ensureDateTasks() {
+  const T = todayISO(); let made = 0;
+  Object.entries(S.dates).forEach(([id, dt]) => {
+    const ev = nextOcc(dt.md); if (ev > addDays(T, 45)) return;
+    const p = S.people[dt.person], name = p ? p.name : "them";
+    stepsFor(dt.level || "light", dt.label || "Birthday", name).forEach(([off, title, mins], i) => {
+      const key = `${id}:${ev}:${i}`;
+      if ((dt.skip || []).includes(key) || all().some(t => t.dateKey === key)) return;
+      const sd = addDays(ev, off);
+      addTask({ title, area: "people", est: mins, day: sd < T ? T : sd, due: ev, value: "Relationships", why: "Because I want to be someone who remembers, and shows up early.", dateKey: key });
+      made++;
+    });
+  });
+  return made;
+}
+function keepCardHtml() {
+  const due = duePeople(0), n = Object.keys(S.people).length;
+  if (!n) return `<section class="card"><div class="sec-head"><h3>Keep in touch</h3></div><p class="empty-note">Add the friends and family you want to stay close to. Reminders arrive on the rhythm you choose.</p><button class="btn small" data-act="tab" data-k="people">Add people</button></section>`;
+  return `<section class="card"><div class="sec-head"><h3>Keep in touch</h3><p>${due.length ? `${due.length} due` : "All caught up"}</p></div>${due.length ? `<div class="list">${due.slice(0, 3).map(x => `<div class="trow" style="grid-template-columns:minmax(0,1fr) auto"><div><strong>${esc(x.p.name)}</strong> <span class="pill">${esc(x.p.relation)}</span><br><span class="muted" style="font-size:13px">${personDueText(x.p)}${x.p.notes ? " · " + esc(x.p.notes.slice(0, 70)) : ""}</span></div><div class="row-actions"><button class="btn small" data-act="reached" data-id="${x.id}">Reached out</button><button class="btn small" data-act="reachTask" data-id="${x.id}">Plan it today</button></div></div>`).join("")}</div>` : `<p class="empty-note">Nobody is overdue. Nice.</p>`}</section>`;
+}
+function personDueText(p) {
+  const d = personDue(p); if (!d) return "No reminders";
+  const n = daysBetween(todayISO(), d), last = p.last ? `last ${daysBetween(p.last, todayISO())}d ago` : "never logged";
+  return `${n < 0 ? `overdue ${-n}d` : n === 0 ? "due today" : `due in ${n}d`} · ${last}`;
+}
+function nextStepOf(id, ev) { return all().filter(t => t.dateKey && t.dateKey.startsWith(`${id}:${ev}:`) && t.status === "open").sort((a, b) => (a.day || "").localeCompare(b.day || ""))[0]; }
+function comingCardHtml() {
+  const up = upcomingDates(30); if (!up.length) return "";
+  return `<section class="card"><div class="sec-head"><h3>Coming up</h3><p>Birthdays and anniversaries, next 30 days</p></div><div class="list">${up.slice(0, 4).map(x => { const st = nextStepOf(x.id, x.ev); return `<div class="trow" style="grid-template-columns:minmax(0,1fr) auto"><div><strong>${esc(x.person ? x.person.name : "?")}'s ${esc((x.dt.label || "").toLowerCase())}</strong><br><span class="muted" style="font-size:13px">${esc(dayName(x.ev))} · ${x.n === 0 ? "today" : `in ${x.n} days`}${st ? ` · next: ${esc(st.title)} (${esc(dayName(st.day))})` : " · all steps done"}</span></div>${st ? `<button class="btn small" data-act="edit" data-id="${st.id}">Open</button>` : ""}</div>`; }).join("")}</div></section>`;
+}
+function peopleSnapshot() {
+  const due = duePeople(3).map(x => `${x.p.name} (${x.p.relation}, ${personDueText(x.p)}${x.p.notes ? ", notes: " + x.p.notes : ""})`);
+  const up = upcomingDates(60).map(x => `${x.person ? x.person.name : "?"}: ${x.dt.label} on ${x.ev} (in ${x.n}d, ${x.dt.level} plan)${x.person && x.person.notes ? ", notes: " + x.person.notes : ""}`);
+  return `PEOPLE TO REACH OUT TO:\n${due.join("\n") || "(none)"}\n\nUPCOMING BIRTHDAYS AND ANNIVERSARIES (60 days):\n${up.join("\n") || "(none)"}`;
+}
+function viewPeople() {
+  const ps = Object.entries(S.people).map(([id, p]) => ({ id, p, due: personDue(p) })).sort((a, b) => (a.due || "9").localeCompare(b.due || "9") || a.p.name.localeCompare(b.p.name));
+  const up = upcomingDates(400);
+  const presets = [["Brooke", "partner"], ["Brother", "family"], ["Sister", "family"], ["Mom", "family"], ["Dad", "family"]];
+  return `<div class="stack"><div class="sec-head"><div><h2>People</h2><p>Staying close and remembering the days that matter, weeks ahead.</p></div><div class="row-actions"><button class="btn" data-act="importPeople">Import list</button><button class="btn" data-act="newDate">${ico("plus")}Add date</button><button class="btn primary" data-act="newPerson">${ico("plus")}Add person</button></div></div>
+  ${ps.length ? "" : `<div class="card"><p class="empty-note">Start with the people closest to you. Tap one to add them, then give them a rhythm and their birthday.</p><div class="chips" style="margin-top:8px">${presets.map(([n, r]) => `<button class="chip" data-act="newPerson" data-name="${esc(n)}" data-rel="${r}">${esc(n)}</button>`).join("")}</div></div>`}
+  <section class="card"><div class="sec-head"><h3>Keep in touch</h3><p>Sorted by who is most overdue</p></div>${ps.length ? `<div class="list">${ps.map(x => `<div class="trow" style="grid-template-columns:minmax(0,1fr) auto"><div style="min-width:0"><span class="tt" data-act="editPerson" data-id="${x.id}">${esc(x.p.name)}</span> <span class="pill">${esc(x.p.relation)}</span>${x.p.example ? ' <span class="pill">example</span>' : ""}<br><span class="${x.due && x.due < todayISO() ? "" : "muted"}" style="font-size:13px;${x.due && x.due < todayISO() ? "color:var(--warn)" : ""}">${personDueText(x.p)}</span>${x.p.notes ? `<br><span class="muted" style="font-size:13px">${esc(x.p.notes.slice(0, 120))}</span>` : ""}</div><div class="row-actions"><button class="btn small" data-act="reached" data-id="${x.id}">Reached out</button><button class="btn small ghost" data-act="reachTask" data-id="${x.id}">+ Task</button></div></div>`).join("")}</div>` : `<p class="empty-note">Nobody yet.</p>`}</section>
+  <section class="card"><div class="sec-head"><h3>Birthdays and anniversaries</h3><p>Tasks appear automatically four weeks out</p></div>${up.length ? `<div class="list">${up.map(x => `<div class="trow" style="grid-template-columns:minmax(0,1fr) auto"><div><span class="tt" data-act="editDate" data-id="${x.id}">${esc(x.person ? x.person.name : "?")}: ${esc(x.dt.label)}</span><br><span class="muted" style="font-size:13px">${esc(dayName(x.ev))} · ${x.n === 0 ? "today" : `in ${x.n} days`} · ${esc((LEVELS.find(l => l[0] === x.dt.level) || LEVELS[2])[1].split(":")[0])} plan</span></div><span class="pill ${x.n <= 28 ? "warn" : ""}">${x.n <= 28 ? "planning" : "later"}</span></div>`).join("")}</div>` : `<p class="empty-note">No dates yet. Add Brooke's birthday and your anniversary first.</p>`}</section></div>`;
+}
+function editPerson(id, preset) {
+  const p = id ? S.people[id] : { name: "", relation: "friend", cadence: 30, last: "", notes: "", ...preset };
+  sheet(`<h2>${id ? "Edit person" : "Add someone"}</h2>
+  <div class="field"><label for="p-name">Name</label><input type="text" id="p-name" value="${esc(p.name)}"></div>
+  <div class="two"><div class="field"><label for="p-rel">Who they are</label><select id="p-rel">${opts(RELS, p.relation)}</select></div><div class="field"><label for="p-cad">Stay in touch</label><select id="p-cad">${opts(CADENCE.map(c => [String(c[0]), c[1]]), String(p.cadence || 0))}</select></div></div>
+  <div class="field"><label for="p-last">Last time you connected</label><input type="date" id="p-last" value="${esc(p.last || "")}"></div>
+  <div class="field"><label for="p-notes">What they love, gift ideas, what's going on in their life</label><textarea id="p-notes">${esc(p.notes || "")}</textarea></div>
+  <div class="row-actions" style="justify-content:space-between"><span class="row-actions"><button class="btn primary" data-act="savePerson" data-id="${id || ""}">Save</button><button class="btn" data-act="close">Cancel</button></span>${id ? `<button class="btn danger" data-act="delPerson" data-id="${id}">Delete</button>` : ""}</div>`);
+}
+function editDate(id, preset) {
+  const ps = Object.entries(S.people);
+  if (!ps.length) { toast("Add the person first."); return editPerson(null); }
+  const d = id ? S.dates[id] : { person: ps[0][0], label: "Birthday", md: "", level: levelFor(ps[0][1].relation), ...preset };
+  const std = ["Birthday", "Anniversary"].includes(d.label);
+  sheet(`<h2>${id ? "Edit date" : "Add a birthday or anniversary"}</h2>
+  <div class="field"><label for="d-person">Who</label><select id="d-person">${opts(ps.map(([k, p]) => [k, p.name]), d.person)}</select></div>
+  <div class="two"><div class="field"><label for="d-label">What</label><select id="d-label">${opts([["Birthday", "Birthday"], ["Anniversary", "Anniversary"], ["Other", "Other"]], std ? d.label : "Other")}</select></div><div class="field"><label for="d-custom">Name it (if other)</label><input type="text" id="d-custom" value="${std ? "" : esc(d.label)}"></div></div>
+  <div class="field"><label for="d-date">Date (the year only matters to you)</label><input type="date" id="d-date" value="${d.md ? esc((d.year || "2000") + "-" + d.md) : ""}"></div>
+  <div class="field"><label for="d-level">How much planning</label><select id="d-level">${opts(LEVELS, d.level)}</select></div>
+  <p class="muted" style="font-size:13px">Tasks for this date appear automatically about four weeks ahead, each scheduled on the day it's due.</p>
+  <div class="row-actions" style="justify-content:space-between"><span class="row-actions"><button class="btn primary" data-act="saveDate" data-id="${id || ""}">Save</button><button class="btn" data-act="close">Cancel</button></span>${id ? `<button class="btn danger" data-act="delDate" data-id="${id}">Delete</button>` : ""}</div>`);
+}
+function peopleImportSheet() {
+  sheet(`<h2>Import your list</h2><p class="muted">Paste names with whatever you know: how often you'd like to be in touch, birthdays, anniversaries, gift ideas. Messy is fine.</p>
+  <textarea id="plist" rows="10" style="min-height:200px" placeholder="Dan, college friend, monthly. Mom, birthday March 3, call weekly. Brooke, birthday and our anniversary..."></textarea>
+  <div class="row-actions"><button class="btn primary" data-act="sortPeople" id="plbtn">Sort it</button><button class="btn" data-act="close">Cancel</button></div>`, "wide");
+}
+let PREV = [];
+async function sortPeople() {
+  const text = $("#plist").value.trim(); if (text.length < 3) return toast("Add a few names first.");
+  const b = $("#plbtn"); b.disabled = true; b.textContent = "Sorting…";
+  try {
+    const sm = await getSample();
+    const r = await sm.json(`${systemText()}\n\nExtract the people from the list below. Return ONLY JSON: {"people":[{"name":"","relation":"friend|family|partner|other","cadence_days":0|7|14|30|60|90,"birthday":"MM-DD or YYYY-MM-DD or empty","anniversary":"MM-DD or YYYY-MM-DD or empty","anniversary_label":"optional","notes":"interests, gift ideas, context"}]}. If cadence is not stated: family 14, close friends 30, others 60. Do not invent dates.\n\nLIST:\n${text}`, { cache: false });
+    PREV = ((r && r.people) || []).filter(p => p.name).slice(0, 80);
+    if (!PREV.length) { toast("No people found."); b.disabled = false; b.textContent = "Sort it"; return; }
+    sheet(`<h2>Here's who I found</h2><p class="muted" style="font-size:13px">Uncheck anyone you don't want.</p><div class="prop">${PREV.map((p, i) => `<label><input type="checkbox" data-pv="${i}" checked> <span>${esc(p.name)} <span class="muted mono" style="font-size:12px">${esc(p.relation || "friend")} · ${esc((CADENCE.find(c => c[0] === Number(p.cadence_days)) || CADENCE[0])[1])}${p.birthday ? " · bday " + esc(p.birthday) : ""}${p.anniversary ? " · anniv " + esc(p.anniversary) : ""}</span></span></label>`).join("")}</div><div class="row-actions"><button class="btn primary" data-act="addPeopleRev">Add checked</button><button class="btn" data-act="close">Discard</button></div>`, "wide");
+  } catch (e) { toast(errText(e)); b.disabled = false; b.textContent = "Sort it"; }
+}
+function addPeopleRev() {
+  const parse = s => { s = String(s || "").trim(); if (/^\d{4}-\d\d-\d\d$/.test(s)) return { md: s.slice(5), year: s.slice(0, 4) }; if (/^\d\d-\d\d$/.test(s)) return { md: s, year: "" }; return null; };
+  let n = 0;
+  document.querySelectorAll("[data-pv]").forEach(c => {
+    if (!c.checked) return; const x = PREV[Number(c.dataset.pv)], id = rid(), rel = RELS.some(r => r[0] === x.relation) ? x.relation : "friend";
+    store.set("people", id, { name: String(x.name).slice(0, 80), relation: rel, cadence: Number(x.cadence_days) || 0, last: "", notes: String(x.notes || "").slice(0, 400) });
+    const b = parse(x.birthday), a = parse(x.anniversary);
+    if (b) store.set("dates", rid(), { person: id, label: "Birthday", md: b.md, year: b.year, level: levelFor(rel), skip: [] });
+    if (a) store.set("dates", rid(), { person: id, label: String(x.anniversary_label || "Anniversary").slice(0, 40), md: a.md, year: a.year, level: levelFor(rel), skip: [] });
+    n++;
+  });
+  closeLayer(); const made = ensureDateTasks(); toast(`${n} added${made ? `, ${made} planning tasks created` : ""}.`);
+}
+
 /* ---------- events ---------- */
 document.addEventListener("click", e => {
   const el = e.target.closest("[data-act]"); if (!el) return;
@@ -770,7 +900,7 @@ document.addEventListener("click", e => {
   else if (a === "more") { if (window.__extend) window.__extend(); }
   else if (a === "close") closeLayer();
   else if (a === "someday") { store.patch("tasks", id, { status: "someday", day: "", focus: false }); closeLayer(); toast("Parked as someday."); }
-  else if (a === "delTask") { store.del("tasks", id); closeLayer(); }
+  else if (a === "delTask") { const t = S.tasks[id]; if (t && t.dateKey) { const di = t.dateKey.split(":")[0]; if (S.dates[di]) store.patch("dates", di, { skip: [...(S.dates[di].skip || []), t.dateKey] }); } store.del("tasks", id); closeLayer(); }
   else if (a === "setfday") { $("#f-day").value = el.dataset.d; }
   else if (a === "saveTask") {
     const title = $("#f-title").value.trim(); if (!title) return toast("Give it a title.");
@@ -797,6 +927,28 @@ document.addEventListener("click", e => {
   else if (a === "askTask") { const t = S.tasks[id]; closeLayer(); ask(`Help me think through this task: [${id}] ${t.title}. Challenge me: why does it matter, what is the smallest next step, and should it be on my plate at all?`, `About: ${t.title}`); }
   else if (a === "ask") ask(el.dataset.q, el.dataset.label);
   else if (a === "settings") settingsSheet();
+  else if (a === "newPerson") editPerson(null, el.dataset.name ? { name: el.dataset.name, relation: el.dataset.rel, cadence: el.dataset.rel === "partner" ? 0 : 14 } : null);
+  else if (a === "editPerson") editPerson(id);
+  else if (a === "savePerson") {
+    const name = $("#p-name").value.trim(); if (!name) return toast("Add a name.");
+    store.set("people", id || rid(), { ...(id ? S.people[id] : {}), name, relation: $("#p-rel").value, cadence: Number($("#p-cad").value), last: $("#p-last").value, notes: $("#p-notes").value.trim() });
+    closeLayer();
+  }
+  else if (a === "delPerson") { Object.entries(S.dates).forEach(([k, d]) => { if (d.person === id) store.del("dates", k); }); store.del("people", id); closeLayer(); }
+  else if (a === "reached") { store.patch("people", id, { last: todayISO() }); toast(`Logged. ${S.people[id].name} will come back around in ${S.people[id].cadence || "no"} days.`); }
+  else if (a === "reachTask") { const p = S.people[id]; addTask({ title: `Reach out to ${p.name}`, area: "people", est: 15, day: todayISO(), value: "Relationships", person: id, why: p.notes ? p.notes.slice(0, 120) : "" }); toast("On today's list."); }
+  else if (a === "newDate") editDate(null);
+  else if (a === "editDate") editDate(id);
+  else if (a === "saveDate") {
+    const date = $("#d-date").value; if (!date) return toast("Pick the date.");
+    const lbl = $("#d-label").value, label = lbl === "Other" ? ($("#d-custom").value.trim() || "Special day") : lbl;
+    store.set("dates", id || rid(), { ...(id ? S.dates[id] : { skip: [] }), person: $("#d-person").value, label, md: date.slice(5), year: date.slice(0, 4), level: $("#d-level").value });
+    closeLayer(); const made = ensureDateTasks(); toast(made ? `${made} planning tasks created.` : "Saved. Tasks will appear four weeks out.");
+  }
+  else if (a === "delDate") { store.del("dates", id); closeLayer(); }
+  else if (a === "importPeople") peopleImportSheet();
+  else if (a === "sortPeople") sortPeople();
+  else if (a === "addPeopleRev") addPeopleRev();
   else if (a === "brief") makeBrief();
   else if (a === "dump") dumpSheet(el.dataset.mode);
   else if (a === "sortDump") sortDump(el.dataset.mode);
