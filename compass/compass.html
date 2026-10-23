@@ -1,0 +1,609 @@
+<title>Daily Compass</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Schibsted+Grotesk:wght@600;800&display=swap" rel="stylesheet">
+<style>
+/* Layout: one calm column of focus (Big 3, something for you) beside a quiet side rail (load, balance, avoidance). Coach and planning live in their own tabs. */
+:root {
+  --bg: #F1F3F8; --surface: #FFFFFF; --surface-2: #E7EAF2; --ink: #151B2D; --ink-2: #44506B; --ink-3: #5B6783;
+  --line: #D5DAE6; --accent: #2D45D1; --accent-ink: #FFFFFF; --accent-soft: #E0E5FB;
+  --good: #1D7443; --good-bg: #DDF0E5; --warn: #8F5A00; --warn-bg: #F7E8C8; --crit: #A93528; --crit-bg: #F6DAD5;
+  --c-work: #4A5A7A; --c-practice: #0F8A8A; --c-content: #7B4FD0; --c-people: #D1456B; --c-joy: #D98E00; --c-self: #2E9E5B;
+  --font-display: "Schibsted Grotesk", "Avenir Next", "Segoe UI", sans-serif;
+  --font-body: "Figtree", "Segoe UI", system-ui, sans-serif;
+  --font-data: "JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0F1320; --surface: #171C2E; --surface-2: #21283D; --ink: #E8ECF7; --ink-2: #B5BED6; --ink-3: #8D98B5;
+    --line: #2B3350; --accent: #8195FF; --accent-ink: #0B1030; --accent-soft: #232C5A;
+    --good: #66D194; --good-bg: #173425; --warn: #E3AE55; --warn-bg: #3A2F15; --crit: #F28B7F; --crit-bg: #3B1E1A;
+    --c-work: #9AA9C9; --c-practice: #4FC9C9; --c-content: #B193F5; --c-people: #F07C9C; --c-joy: #FFC13D; --c-self: #5FD08D;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0F1320; --surface: #171C2E; --surface-2: #21283D; --ink: #E8ECF7; --ink-2: #B5BED6; --ink-3: #8D98B5;
+  --line: #2B3350; --accent: #8195FF; --accent-ink: #0B1030; --accent-soft: #232C5A;
+  --good: #66D194; --good-bg: #173425; --warn: #E3AE55; --warn-bg: #3A2F15; --crit: #F28B7F; --crit-bg: #3B1E1A;
+  --c-work: #9AA9C9; --c-practice: #4FC9C9; --c-content: #B193F5; --c-people: #F07C9C; --c-joy: #FFC13D; --c-self: #5FD08D;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.5; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 0 64px; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); background: var(--bg); z-index: 40; }
+.wrap { max-width: 1100px; margin: 0 auto; }
+h1, h2, h3 { font-family: var(--font-display); margin: 0; line-height: 1.15; text-wrap: balance; }
+h2 { font-size: 20px; font-weight: 800; letter-spacing: -0.01em; }
+h3 { font-size: 15px; font-weight: 800; }
+p { margin: 0; }
+button, select, input, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.mono { font-family: var(--font-data); font-variant-numeric: tabular-nums; }
+.muted { color: var(--ink-3); }
+.eyebrow { font-size: 11px; letter-spacing: 0.09em; text-transform: uppercase; color: var(--ink-3); font-weight: 600; }
+[hidden] { display: none !important; }
+
+.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 30; background: var(--bg); border-bottom: 1px solid var(--line); margin: 0 calc(-1 * max(16px, env(safe-area-inset-left, 0px))) 0 calc(-1 * max(16px, env(safe-area-inset-left, 0px))); padding: 12px max(16px, env(safe-area-inset-right, 0px)) 0 max(16px, env(safe-area-inset-left, 0px)); }
+.brandrow { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; }
+.brand { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.brand h1 { font-size: 22px; font-weight: 800; }
+.brand .date { color: var(--ink-3); font-size: 13px; }
+.capture { display: flex; gap: 6px; flex: 1 1 320px; max-width: 520px; }
+.capture input[type=text] { flex: 1 1 auto; min-width: 0; }
+.tabs { display: flex; gap: 2px; margin-top: 8px; overflow-x: auto; scrollbar-width: none; }
+.tabs::-webkit-scrollbar { display: none; }
+.tab { appearance: none; background: none; border: 0; border-bottom: 3px solid transparent; padding: 8px 14px 9px; cursor: pointer; font-weight: 600; color: var(--ink-2); white-space: nowrap; display: flex; gap: 8px; align-items: center; }
+.tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+.count { font-family: var(--font-data); font-size: 11px; background: var(--surface-2); border-radius: 99px; padding: 1px 7px; color: var(--ink-2); }
+main { padding-top: 20px; }
+
+input[type=text], input[type=date], input[type=number], select, textarea { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; min-height: 36px; width: 100%; }
+textarea { resize: vertical; min-height: 64px; }
+.btn { appearance: none; border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 6px 12px; cursor: pointer; font-size: 13px; font-weight: 600; min-height: 34px; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; }
+.btn:hover { border-color: var(--accent); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn.ghost { background: none; border-color: transparent; color: var(--ink-2); }
+.btn.ghost:hover { border-color: var(--line); }
+.btn.small { padding: 2px 9px; min-height: 28px; font-size: 12px; }
+.btn.danger { color: var(--crit); }
+.btn[disabled] { opacity: .5; cursor: default; }
+.ico { width: 15px; height: 15px; flex: none; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; min-width: 0; }
+.pill { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 600; padding: 2px 9px; border-radius: 99px; background: var(--surface-2); color: var(--ink-2); white-space: nowrap; }
+.pill.warn { background: var(--warn-bg); color: var(--warn); }
+.pill.crit { background: var(--crit-bg); color: var(--crit); }
+.pill.good { background: var(--good-bg); color: var(--good); }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--c); flex: none; }
+.pill.area { background: color-mix(in srgb, var(--c) 16%, var(--surface)); color: var(--ink); }
+
+.cols { display: grid; grid-template-columns: minmax(0, 1fr) 330px; gap: 20px; align-items: start; }
+@media (max-width: 880px) { .cols { grid-template-columns: minmax(0, 1fr); } }
+.stack { display: grid; gap: 20px; min-width: 0; }
+.sec-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px 12px; margin-bottom: 10px; }
+.sec-head p { color: var(--ink-3); font-size: 13px; }
+.hello { display: grid; gap: 6px; }
+.hello h2 { font-size: 26px; }
+.intent { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.intent input { flex: 1 1 260px; border-style: dashed; }
+
+.big3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); gap: 12px; }
+.slot { background: var(--surface); border: 1px solid var(--line); border-top: 4px solid var(--c); border-radius: 12px; padding: 14px; display: grid; gap: 8px; align-content: start; min-width: 0; }
+.slot.empty { border-style: dashed; border-top-width: 1px; background: none; color: var(--ink-3); align-content: center; min-height: 130px; text-align: center; }
+.slot .t { font-family: var(--font-display); font-weight: 800; font-size: 17px; line-height: 1.2; overflow-wrap: anywhere; cursor: pointer; }
+.slot .why { font-size: 13px; color: var(--ink-2); font-style: italic; }
+.slot.done .t { text-decoration: line-through; color: var(--ink-3); }
+.row-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+
+.joy { border-color: color-mix(in srgb, var(--c-joy) 55%, var(--line)); background: color-mix(in srgb, var(--c-joy) 9%, var(--surface)); }
+.joy.missing h3 { color: var(--warn); }
+
+.list { display: grid; gap: 0; }
+.trow { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 9px 0; border-top: 1px solid var(--line); }
+.trow:first-child { border-top: 0; }
+.trow .tt { cursor: pointer; overflow-wrap: anywhere; font-weight: 500; }
+.trow.done .tt { text-decoration: line-through; color: var(--ink-3); }
+.chk { width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--ink-3); background: none; cursor: pointer; padding: 0; display: grid; place-items: center; color: transparent; }
+.chk:hover { border-color: var(--good); color: var(--good); }
+.chk.on { background: var(--good); border-color: var(--good); color: #fff; }
+.trow .acts { display: flex; gap: 4px; }
+
+.meter { height: 12px; border-radius: 99px; background: var(--surface-2); position: relative; overflow: hidden; display: flex; }
+.meter i { display: block; height: 100%; }
+.meter .m-done { background: var(--c, var(--good)); }
+.meter .m-plan { background: color-mix(in srgb, var(--c, var(--accent)) 35%, var(--surface-2)); }
+.bal { display: grid; gap: 12px; }
+.bal-row { display: grid; gap: 4px; }
+.bal-row .top-line { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; align-items: center; }
+.alert { padding: 10px 12px; border-radius: 8px; background: var(--warn-bg); color: var(--warn); font-size: 13px; display: grid; gap: 8px; }
+.alert.crit { background: var(--crit-bg); color: var(--crit); }
+.alert strong { font-weight: 700; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { appearance: none; border: 1px solid var(--line); background: var(--surface); border-radius: 99px; padding: 4px 12px; font-size: 13px; font-weight: 600; cursor: pointer; display: inline-flex; gap: 6px; align-items: center; }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+
+.goal { display: grid; gap: 10px; border-left: 5px solid var(--c); }
+.goal .gt { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; align-items: start; }
+.gh { font-family: var(--font-display); font-weight: 800; font-size: 18px; overflow-wrap: anywhere; }
+.next { background: var(--surface-2); border-radius: 8px; padding: 8px 10px; font-size: 14px; display: flex; gap: 8px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+.prop { display: grid; gap: 4px; }
+.prop label { display: flex; gap: 8px; align-items: start; padding: 4px 0; }
+
+.chat { display: grid; grid-template-rows: auto minmax(320px, 58vh) auto; gap: 12px; }
+.log { overflow-y: auto; display: grid; gap: 10px; align-content: start; padding: 4px 2px; }
+.msg { max-width: 82ch; padding: 10px 14px; border-radius: 12px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.msg.user { background: var(--accent); color: var(--accent-ink); justify-self: end; border-bottom-right-radius: 3px; }
+.msg.assistant { background: var(--surface); border: 1px solid var(--line); justify-self: start; border-bottom-left-radius: 3px; }
+.acts-log { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.compose { display: flex; gap: 8px; align-items: end; }
+.compose textarea { min-height: 44px; max-height: 160px; }
+
+.overlay { position: fixed; inset: 0; background: color-mix(in srgb, var(--ink) 55%, transparent); z-index: 60; display: grid; place-items: center; padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); overflow-y: auto; }
+.sheet { background: var(--surface); border-radius: 14px; border: 1px solid var(--line); width: min(100%, 520px); padding: 20px; display: grid; gap: 12px; max-height: 100%; overflow-y: auto; }
+.sheet.wide { width: min(100%, 620px); }
+.field { display: grid; gap: 4px; }
+.field > label { font-size: 12px; font-weight: 600; color: var(--ink-2); }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media (max-width: 440px) { .two { grid-template-columns: 1fr; } }
+.focus { text-align: center; justify-items: center; gap: 16px; padding: 28px 20px; }
+.focus .big { font-family: var(--font-display); font-weight: 800; font-size: clamp(22px, 5vw, 32px); text-wrap: balance; overflow-wrap: anywhere; }
+.timer { font-family: var(--font-data); font-size: 56px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(20px + env(safe-area-inset-bottom, 0px)); background: var(--ink); color: var(--bg); padding: 9px 16px; border-radius: 99px; font-size: 14px; z-index: 80; max-width: calc(100vw - 32px); }
+.empty-note { color: var(--ink-3); font-size: 14px; padding: 6px 0; }
+@media (prefers-reduced-motion: no-preference) { .slot, .btn { transition: border-color .15s, background .15s; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brandrow">
+      <div class="brand"><h1>Daily Compass</h1><span class="date" id="dateline"></span></div>
+      <form class="capture" id="capform" autocomplete="off">
+        <input type="text" id="cap" placeholder="Capture anything. Enter to drop it in the inbox" aria-label="Capture a task">
+        <select id="capArea" aria-label="Area" style="width:auto"></select>
+        <button class="btn primary" type="submit">Add</button>
+      </form>
+    </div>
+    <nav class="tabs" role="tablist" id="tabs"></nav>
+  </header>
+  <main id="view"></main>
+</div>
+<div id="layer"></div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+const AREAS = [
+  { id: "work", name: "Toptal", cv: "--c-work" },
+  { id: "practice", name: "Practice", cv: "--c-practice" },
+  { id: "content", name: "Content", cv: "--c-content" },
+  { id: "people", name: "People", cv: "--c-people" },
+  { id: "joy", name: "Joy", cv: "--c-joy" },
+  { id: "self", name: "Body & mind", cv: "--c-self" }
+];
+const AREA = Object.fromEntries(AREAS.map(a => [a.id, a]));
+const NOURISH = ["joy", "people", "self"];
+const DEFAULTS = { capacity: 300, targets: { joy: 240, people: 240, self: 180 }, values: ["Joy", "Gratitude", "Bravery", "Presence", "Relationships"], profile: "" };
+
+const S = { tasks: {}, goals: {}, plans: {}, days: {}, settings: { ...DEFAULTS }, coach: [] };
+let tab = "today", filter = "all", DB = null, SAMPLE = null, busy = false, pendingRender = false, draft = "", ctl = null, focusTimer = null, booted = {};
+const proposals = {};
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const pad = n => String(n).padStart(2, "0");
+const iso = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const todayISO = () => iso(new Date());
+const addDays = (s, n) => { const d = new Date(s + "T12:00:00"); d.setDate(d.getDate() + n); return iso(d); };
+const weekStart = (s) => { const d = new Date((s || todayISO()) + "T12:00:00"); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return iso(d); };
+const dayName = s => new Date(s + "T12:00:00").toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+const rid = () => Math.random().toString(36).slice(2, 8);
+const fmtM = m => { m = Math.round(m); const h = Math.floor(m / 60), r = m % 60; return h ? (r ? `${h}h ${r}m` : `${h}h`) : `${r}m`; };
+const clean = o => JSON.parse(JSON.stringify(o));
+
+const IC = {
+  check: '<path d="M4 12l5 5L20 6" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>',
+  star: '<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>',
+  starOn: '<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>',
+  next: '<path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>',
+  play: '<path d="M7 4l13 8-13 8z" fill="currentColor"/>',
+  plus: '<path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>',
+  gear: '<circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>'
+};
+const ico = (n, c) => `<svg class="ico ${c || ""}" viewBox="0 0 24 24" aria-hidden="true">${IC[n]}</svg>`;
+
+/* ---------- storage: shared db when available, localStorage otherwise ---------- */
+const LS = "daily-compass-v1";
+function lsSave() { try { localStorage.setItem(LS, JSON.stringify(S)); } catch (e) {} }
+function lsLoad() { try { const j = JSON.parse(localStorage.getItem(LS) || "null"); if (j) Object.assign(S, j); S.settings = { ...DEFAULTS, ...(S.settings || {}) }; } catch (e) {} }
+const store = {
+  set(coll, id, data) {
+    data = clean(data);
+    if (coll === "settings") S.settings = { ...DEFAULTS, ...data }; else S[coll][id] = data;
+    schedule();
+    if (DB) DB.doc(`${coll}/${id}`).set(data).catch(() => toast("Could not save. Check your connection."));
+    else lsSave();
+  },
+  patch(coll, id, p) { store.set(coll, id, { ...S[coll][id], ...p }); },
+  del(coll, id) {
+    delete S[coll][id]; schedule();
+    if (DB) DB.doc(`${coll}/${id}`).delete().catch(() => {}); else lsSave();
+  }
+};
+async function boot() {
+  render();
+  lsLoad();
+  DB = (window.claude && window.claude.use) ? await window.claude.use("db").catch(() => null) : null;
+  if (!DB) { render(); return; }
+  for (const coll of ["tasks", "goals", "plans", "days"]) {
+    DB.collection(coll).onSnapshot(snap => { S[coll] = {}; snap.docs.forEach(d => { S[coll][d.id] = d.data(); }); booted[coll] = 1; schedule(); }, () => {});
+  }
+  DB.doc("settings/main").onSnapshot(s => { S.settings = { ...DEFAULTS, ...(s.exists ? s.data() : {}) }; booted.settings = 1; schedule(); }, () => {});
+  DB.doc("coach/log").onSnapshot(s => { if (!busy) { S.coach = (s.exists && s.data().messages) || []; if (tab === "coach") paintLog(); } }, () => {});
+}
+
+/* ---------- task logic ---------- */
+const all = () => Object.entries(S.tasks).map(([id, t]) => ({ id, ...t }));
+const open = () => all().filter(t => t.status === "open");
+const onDay = d => open().filter(t => t.day === d);
+const est = t => Number(t.est) || 30;
+function addTask(p) {
+  const id = rid();
+  const t = { title: "", area: "work", est: 30, day: "", focus: false, status: "open", goal: "", value: "", why: "", hard: false, deferCount: 0, created: Date.now(), ...p };
+  store.set("tasks", id, t); return id;
+}
+function complete(id) {
+  const t = S.tasks[id]; if (!t) return;
+  if (t.status === "done") return store.patch("tasks", id, { status: "open", doneAt: 0 });
+  store.patch("tasks", id, { status: "done", doneAt: Date.now(), day: t.day || todayISO() });
+  toast(["Done.", "Nice, that one's off your mind.", "Moved. Notice how that feels."][Math.floor(Math.random() * 3)]);
+}
+function toggleBig(id) {
+  const t = S.tasks[id]; if (!t) return;
+  if (!t.focus) {
+    const n = onDay(todayISO()).filter(x => x.focus && x.id !== id).length;
+    if (n >= 3) return toast("Three is the limit. Swap one out first.");
+    store.patch("tasks", id, { focus: true, day: todayISO() });
+  } else store.patch("tasks", id, { focus: false });
+}
+function setDay(id, day) {
+  const t = S.tasks[id]; if (!t) return;
+  const moved = t.day && day && day > t.day;
+  store.patch("tasks", id, { day, focus: day === todayISO() ? t.focus : false, deferCount: (t.deferCount || 0) + (moved ? 1 : 0) });
+}
+function score(t) {
+  let s = 0;
+  if (t.due) { const d = (new Date(t.due) - new Date(todayISO())) / 864e5; s += d <= 0 ? 8 : d <= 2 ? 5 : d <= 7 ? 2 : 0; }
+  s += Math.min(t.deferCount || 0, 4) * 1.5;
+  if (t.goal && S.goals[t.goal]) s += 2;
+  if (t.hard) s += 1.5;
+  if (NOURISH.includes(t.area)) s += nourishGap(t.area) > 0 ? 2.5 : 0;
+  return s;
+}
+function weekMinutes() {
+  const ws = weekStart(), we = addDays(ws, 6), out = {};
+  AREAS.forEach(a => out[a.id] = { done: 0, plan: 0 });
+  all().forEach(t => { if (t.day >= ws && t.day <= we && out[t.area] && t.status !== "someday") out[t.area][t.status === "done" ? "done" : "plan"] += est(t); });
+  return out;
+}
+function nourishGap(a) { const w = weekMinutes()[a]; return (S.settings.targets[a] || 0) - w.done - w.plan; }
+function dayLoad(d) {
+  let done = 0, plan = 0;
+  all().forEach(t => { if (t.day === d && t.status !== "someday") { if (t.status === "done") done += est(t); else plan += est(t); } });
+  return { done, plan };
+}
+
+/* ---------- rendering ---------- */
+function schedule() { if (schedule.t) return; schedule.t = requestAnimationFrame(() => { schedule.t = 0; render(); }); }
+function render() {
+  const view = $("#view"), ae = document.activeElement;
+  if (view.contains(ae) && /INPUT|TEXTAREA|SELECT/.test(ae.tagName)) { pendingRender = true; return; }
+  pendingRender = false;
+  $("#dateline").textContent = new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
+  $("#capArea").innerHTML = AREAS.map(a => `<option value="${a.id}">${esc(a.name)}</option>`).join("");
+  const inbox = open().filter(t => !t.day).length;
+  $("#tabs").innerHTML = [["today", "Today"], ["plan", "Plan"], ["goals", "Goals"], ["coach", "Coach"]].map(([k, l]) =>
+    `<button class="tab" role="tab" aria-selected="${tab === k}" data-act="tab" data-k="${k}">${l}${k === "plan" && inbox ? `<span class="count">${inbox}</span>` : ""}</button>`).join("") +
+    `<button class="tab" style="margin-left:auto" data-act="settings" aria-label="Settings">${ico("gear")}</button>`;
+  if (tab === "coach") { if (!view.querySelector("#log")) viewCoach(view); return; }
+  view.innerHTML = tab === "today" ? viewToday() : tab === "plan" ? viewPlan() : viewGoals();
+}
+document.addEventListener("focusout", () => { setTimeout(() => { if (pendingRender) render(); }, 0); });
+
+const areaPill = t => { const a = AREA[t.area] || AREA.work; return `<span class="pill area" style="--c:var(${a.cv})"><span class="dot" style="--c:var(${a.cv})"></span>${esc(a.name)}</span>`; };
+function metaOf(t) {
+  return `<div class="meta">${areaPill(t)}<span class="pill mono">${fmtM(est(t))}</span>${t.value ? `<span class="pill">${esc(t.value)}</span>` : ""}${t.hard ? '<span class="pill crit">hard conversation</span>' : ""}${t.deferCount >= 2 ? `<span class="pill warn">moved ${t.deferCount}×</span>` : ""}${t.due ? `<span class="pill ${t.due <= todayISO() ? "crit" : ""}">due ${dayName(t.due)}</span>` : ""}${t.example ? '<span class="pill">example</span>' : ""}</div>`;
+}
+function row(t, o = {}) {
+  const dn = t.status === "done";
+  return `<div class="trow ${dn ? "done" : ""}"><button class="chk ${dn ? "on" : ""}" data-act="done" data-id="${t.id}" aria-label="${dn ? "Reopen" : "Mark done"}">${ico("check")}</button>
+  <div style="min-width:0"><div class="tt" data-act="edit" data-id="${t.id}">${esc(t.title)}</div>${metaOf(t)}</div>
+  <div class="acts">${o.today ? `<button class="btn small" data-act="day" data-id="${t.id}" data-d="${todayISO()}">Today</button>` : ""}${o.tmrw ? `<button class="btn small" data-act="day" data-id="${t.id}" data-d="${addDays(todayISO(), 1)}">Tomorrow</button>` : ""}${!dn && t.day === todayISO() ? `<button class="btn small ghost" data-act="big" data-id="${t.id}" aria-label="Toggle Big 3" title="Big 3">${ico(t.focus ? "starOn" : "star")}</button><button class="btn small ghost" data-act="defer" data-id="${t.id}" aria-label="Move to tomorrow" title="Move to tomorrow">${ico("next")}</button>` : ""}</div></div>`;
+}
+
+function viewToday() {
+  const T = todayISO(), ws = weekStart(), plan = S.plans["w-" + ws], mon = S.plans["m-" + T.slice(0, 7)];
+  const tt = onDay(T), doneToday = all().filter(t => t.day === T && t.status === "done");
+  const big = [...tt, ...doneToday].filter(t => t.focus).slice(0, 3);
+  const nourish = tt.filter(t => NOURISH.includes(t.area)), nourishDone = doneToday.filter(t => NOURISH.includes(t.area));
+  const rest = tt.filter(t => !t.focus);
+  const L = dayLoad(T), cap = S.settings.capacity, total = L.done + L.plan;
+  const pull = open().filter(t => t.day !== T && !(t.status === "someday")).sort((a, b) => score(b) - score(a)).slice(0, 6);
+  const avoid = open().filter(t => (t.deferCount || 0) >= 2 || (t.hard && (t.deferCount || 0) >= 1));
+  const h = new Date().getHours(), greet = h < 12 ? "Morning" : h < 18 ? "Afternoon" : "Evening";
+  const slots = [0, 1, 2].map(i => {
+    const t = big[i];
+    if (!t) return `<div class="slot empty"><div><strong>Open slot</strong><p style="font-size:13px">${i === 0 ? "What is the one thing that makes today a good day?" : "Star a task below, or leave it empty on purpose."}</p></div></div>`;
+    const a = AREA[t.area], dn = t.status === "done";
+    return `<div class="slot ${dn ? "done" : ""}" style="--c:var(${a.cv})"><div class="t" data-act="edit" data-id="${t.id}">${esc(t.title)}</div>${t.why ? `<div class="why">${esc(t.why)}</div>` : ""}${metaOf(t)}
+      <div class="row-actions">${dn ? `<button class="btn small" data-act="done" data-id="${t.id}">Reopen</button>` : `<button class="btn small primary" data-act="focus" data-id="${t.id}">${ico("play")}Start</button><button class="btn small" data-act="done" data-id="${t.id}">${ico("check")}Done</button><button class="btn small ghost" data-act="defer" data-id="${t.id}">Not today</button>`}</div></div>`;
+  }).join("");
+  const cands = open().filter(t => NOURISH.includes(t.area) && t.day !== T).sort((a, b) => score(b) - score(a)).slice(0, 3);
+  const joyBlock = nourish.length || nourishDone.length
+    ? `<div class="card joy"><div class="sec-head"><h3>Something for you</h3><span class="pill good">on the plan</span></div><div class="list">${[...nourish, ...nourishDone].map(t => row(t)).join("")}</div></div>`
+    : `<div class="card joy missing"><div class="sec-head"><h3>Nothing for you on today's plan</h3><p>Joy, people and body get scheduled like work, or they don't happen.</p></div>
+      ${cands.length ? `<div class="list">${cands.map(t => row(t, { today: true })).join("")}</div>` : `<p class="empty-note">No joy, people or body tasks captured yet. Add one with the capture bar, or ask the coach for ideas.</p>`}
+      <div class="row-actions" style="margin-top:10px"><button class="btn small" data-act="ask" data-q="I have nothing for me today. Ask me two quick questions, then suggest three small joyful or connecting things I could schedule before tonight.">Ask coach for ideas</button></div></div>`;
+  const wk = weekMinutes();
+  const bal = AREAS.map(a => {
+    const w = wk[a.id], tg = S.settings.targets[a.id], max = Math.max(tg || 0, w.done + w.plan, 60), behind = tg && new Date().getDay() !== 0 && ((new Date().getDay() + 6) % 7) >= 2 && (w.done + w.plan) < tg * 0.5;
+    return `<div class="bal-row" style="--c:var(${a.cv})"><div class="top-line"><span><span class="dot" style="--c:var(${a.cv});display:inline-block;margin-right:6px"></span>${esc(a.name)}${behind ? ' <span class="pill warn">behind</span>' : ""}</span><span class="mono muted">${fmtM(w.done)}${w.plan ? ` + ${fmtM(w.plan)}` : ""}${tg ? ` / ${fmtM(tg)}` : ""}</span></div>
+    <div class="meter" role="img" aria-label="${esc(a.name)} ${fmtM(w.done + w.plan)} this week"><i class="m-done" style="width:${(w.done / max) * 100}%"></i><i class="m-plan" style="width:${(w.plan / max) * 100}%"></i></div></div>`;
+  }).join("");
+  const over = total > cap;
+  return `<div class="cols"><div class="stack">
+    <section class="hello"><p class="eyebrow">${dayName(T)}</p><h2>${greet}, Wes. What matters most today?</h2>
+      <div class="intent"><span class="eyebrow">This week</span><input type="text" id="weekIntent" value="${esc(plan ? plan.text : "")}" placeholder="Set one intention for the week" data-save="week" aria-label="Week intention"></div>
+      ${mon ? `<p class="muted" style="font-size:13px"><strong>This month:</strong> ${esc(mon.text)}</p>` : ""}</section>
+    <section><div class="sec-head"><h2>Big 3</h2><p>Three at most. Everything else is a bonus.</p></div><div class="big3">${slots}</div></section>
+    <section>${joyBlock}</section>
+    <section class="card"><div class="sec-head"><h3>Also today</h3><p>${rest.length} open</p></div>${rest.length ? `<div class="list">${rest.map(t => row(t)).join("")}</div>` : `<p class="empty-note">Nothing else scheduled. Pull something from below if you have room.</p>`}</section>
+    <section class="card"><div class="sec-head"><h3>Pull in next</h3><p>Ranked by due date, goals, things you keep moving, and what your week is missing.</p></div>${pull.length ? `<div class="list">${pull.map(t => row(t, { today: true, tmrw: true })).join("")}</div>` : `<p class="empty-note">The inbox is empty. Capture something above.</p>`}</section>
+    <section class="card"><div class="sec-head"><h3>Close the day</h3><p>Two lines. Presence and gratitude, on purpose.</p></div>
+      <div class="field"><label for="win">One thing that went well</label><input type="text" id="win" data-save="day" data-f="win" value="${esc((S.days[T] || {}).win || "")}"></div>
+      <div class="field" style="margin-top:8px"><label for="grat">One thing I'm grateful for</label><input type="text" id="grat" data-save="day" data-f="grat" value="${esc((S.days[T] || {}).grat || "")}"></div>
+      <div class="row-actions" style="margin-top:10px"><button class="btn small" data-act="ask" data-q="Close my day with me. Ask me how it went against my Big 3, what I avoided, and what I want tomorrow to protect.">Shut down with coach</button></div></section>
+  </div><aside class="stack">
+    <section class="card"><div class="sec-head"><h3>Today's load</h3><span class="mono muted">${fmtM(total)} of ${fmtM(cap)}</span></div>
+      <div class="meter" style="--c:var(--accent)"><i class="m-done" style="width:${Math.min(100, (L.done / Math.max(cap, total)) * 100)}%"></i><i class="m-plan" style="width:${Math.min(100, (L.plan / Math.max(cap, total)) * 100)}%"></i></div>
+      ${over ? `<div class="alert crit" style="margin-top:12px"><span><strong>${fmtM(total - cap)} over.</strong> You cannot do all of this. Choosing now is kinder than failing at 6pm.</span><div class="row-actions"><button class="btn small" data-act="ask" data-q="My plan today is over capacity. Make me choose: what comes off, and what am I afraid will happen if it does?">Help me cut</button></div></div>` : total === 0 ? `<p class="empty-note" style="margin-top:8px">Nothing scheduled yet.</p>` : ""}</section>
+    <section class="card"><div class="sec-head"><h3>Week balance</h3><p>Done + planned vs target</p></div><div class="bal">${bal}</div></section>
+    <section class="card"><div class="sec-head"><h3>Avoidance radar</h3></div>${avoid.length ? `<div class="stack" style="gap:10px">${avoid.slice(0, 4).map(t => `<div class="alert"><span><strong>${esc(t.title)}</strong><br>${t.deferCount ? `Moved ${t.deferCount}×.` : ""} ${t.hard ? "Hard conversation." : ""}</span><div class="row-actions"><button class="btn small" data-act="focus" data-id="${t.id}">Just 10 minutes</button><button class="btn small" data-act="askTask" data-id="${t.id}">Ask coach</button><button class="btn small ghost" data-act="someday" data-id="${t.id}">Drop it</button></div></div>`).join("")}</div>` : `<p class="empty-note">Nothing is being dodged right now.</p>`}</section>
+  </aside></div>`;
+}
+
+function viewPlan() {
+  const chips = `<div class="chips" role="group" aria-label="Filter by area"><button class="chip" aria-pressed="${filter === "all"}" data-act="filter" data-f="all">All</button>${AREAS.map(a => `<button class="chip" aria-pressed="${filter === a.id}" data-act="filter" data-f="${a.id}"><span class="dot" style="--c:var(${a.cv})"></span>${esc(a.name)}</button>`).join("")}</div>`;
+  const f = t => filter === "all" || t.area === filter, T = todayISO();
+  const o = open().filter(f);
+  const inbox = o.filter(t => !t.day).sort((a, b) => score(b) - score(a));
+  const sched = o.filter(t => t.day).sort((a, b) => a.day.localeCompare(b.day));
+  const days = [...new Set(sched.map(t => t.day))];
+  const some = all().filter(t => t.status === "someday" && f(t));
+  const recent = all().filter(t => t.status === "done" && f(t)).sort((a, b) => (b.doneAt || 0) - (a.doneAt || 0)).slice(0, 8);
+  return `<div class="stack"><div class="sec-head"><h2>Plan</h2><button class="btn primary" data-act="new">${ico("plus")}New task</button></div>${chips}
+    <section class="card"><div class="sec-head"><h3>Inbox</h3><p>No day yet. Decide, schedule, or drop.</p></div>${inbox.length ? `<div class="list">${inbox.map(t => row(t, { today: true, tmrw: true })).join("")}</div>` : `<p class="empty-note">Inbox zero for this filter.</p>`}</section>
+    ${days.map(d => `<section class="card"><div class="sec-head"><h3>${d === T ? "Today" : d === addDays(T, 1) ? "Tomorrow" : dayName(d)}</h3><p class="mono">${fmtM(sched.filter(t => t.day === d).reduce((s, t) => s + est(t), 0))}</p></div><div class="list">${sched.filter(t => t.day === d).map(t => row(t)).join("")}</div></section>`).join("")}
+    ${some.length ? `<section class="card"><div class="sec-head"><h3>Someday</h3><p>Parked on purpose.</p></div><div class="list">${some.map(t => row(t, { today: true })).join("")}</div></section>` : ""}
+    ${recent.length ? `<section class="card"><div class="sec-head"><h3>Recently done</h3></div><div class="list">${recent.map(t => row(t)).join("")}</div></section>` : ""}</div>`;
+}
+
+function goalStats(id) {
+  const ts = all().filter(t => t.goal === id), d = ts.filter(t => t.status === "done").length;
+  const nxt = ts.filter(t => t.status === "open").sort((a, b) => (a.day || "9").localeCompare(b.day || "9") || a.created - b.created)[0];
+  return { total: ts.length, done: d, next: nxt };
+}
+function viewGoals() {
+  const hz = { quarter: "This quarter", year: "This year", life: "Long-term" };
+  const gs = Object.entries(S.goals).map(([id, g]) => ({ id, ...g })).sort((a, b) => ["quarter", "year", "life"].indexOf(a.horizon) - ["quarter", "year", "life"].indexOf(b.horizon));
+  return `<div class="stack"><div class="sec-head"><div><h2>Goals</h2><p>Every goal needs a visible next step, or it is only a wish.</p></div><button class="btn primary" data-act="newGoal">${ico("plus")}New goal</button></div>
+    ${gs.length ? gs.map(g => { const st = goalStats(g.id), a = AREA[g.area] || AREA.work, P = proposals[g.id];
+      return `<article class="card goal" style="--c:var(${a.cv})"><div class="gt"><div style="min-width:0"><div class="eyebrow">${hz[g.horizon] || ""}${g.target ? ` · by ${dayName(g.target)}` : ""}</div><div class="gh">${esc(g.title)}</div>${g.why ? `<p class="muted" style="font-size:14px">${esc(g.why)}</p>` : ""}</div><div class="row-actions"><button class="btn small" data-act="editGoal" data-id="${g.id}">Edit</button></div></div>
+      <div class="meta">${areaPill({ area: g.area })}<span class="pill mono">${st.done}/${st.total} steps</span>${g.example ? '<span class="pill">example</span>' : ""}</div>
+      ${st.next ? `<div class="next"><span><span class="eyebrow">Next step</span><br>${esc(st.next.title)} <span class="muted mono">${fmtM(est(st.next))}</span></span><span class="row-actions"><button class="btn small" data-act="day" data-id="${st.next.id}" data-d="${todayISO()}">Do today</button></span></div>` : `<div class="alert crit"><span><strong>No next step.</strong> This goal is stalled until you define one.</span></div>`}
+      ${P ? (P.loading ? '<p class="muted">Coach is breaking it down…</p>' : P.error ? `<p class="muted">${esc(P.error)}</p>` : `<div class="prop"><div class="eyebrow">Proposed steps${P.cadence ? ` · ${esc(P.cadence)}` : ""}</div>${P.steps.map((s, i) => `<label><input type="checkbox" data-prop="${g.id}" data-i="${i}" checked> <span>${esc(s.title)} <span class="muted mono">${fmtM(s.est)} · ${esc((AREA[s.area] || AREA.work).name)}</span></span></label>`).join("")}<div class="row-actions" style="margin-top:6px"><button class="btn small primary" data-act="addProp" data-id="${g.id}">Add checked to inbox</button><button class="btn small ghost" data-act="dismissProp" data-id="${g.id}">Dismiss</button></div></div>`) : ""}
+      <div class="row-actions"><button class="btn small" data-act="breakdown" data-id="${g.id}">Break it down</button><button class="btn small" data-act="askGoal" data-id="${g.id}">Challenge this goal</button></div></article>`; }).join("") : `<div class="card"><p class="empty-note">No goals yet. Add the long-term thing you keep circling, then break it down into steps small enough to schedule.</p></div>`}</div>`;
+}
+
+/* ---------- coach ---------- */
+function viewCoach(view) {
+  view.innerHTML = `<div class="chat"><div><div class="chips" id="modes">${[["Plan my day", "Plan my day. Look at everything on my plate, challenge it against my values, and help me land a Big 3 plus one thing for me. Ask me one sharp question first."], ["Plan my week", "Plan my week with me. Check the balance across work and the rest of my life, my goals, and what I keep postponing. Start with one question."], ["Monthly reset", "Run a monthly reset. Review my goals and last weeks' patterns, ask what to stop, start and protect, then save a one-line monthly focus."], ["I'm avoiding something", "I'm avoiding something. Help me figure out what it is, what I'm afraid will happen, and the smallest brave move."], ["Close my day", "Close my day with me. Ask how it went against my Big 3, what I avoided, and what tomorrow should protect."]].map(([l, q]) => `<button class="chip" data-act="ask" data-q="${esc(q)}" data-label="${esc(l)}">${esc(l)}</button>`).join("")}</div></div>
+    <div class="log card" id="log" role="log" aria-live="polite"></div>
+    <form class="compose" id="chatform"><textarea id="chatin" rows="1" placeholder="Tell the coach what's on your mind. It will push back." aria-label="Message the coach"></textarea><button class="btn primary" type="submit" id="chatsend">Send</button></form></div>`;
+  paintLog();
+}
+function paintLog() {
+  const el = $("#log"); if (!el) return;
+  const ms = [...S.coach];
+  if (busy && draft) ms.push({ role: "assistant", content: draft });
+  else if (busy) ms.push({ role: "assistant", content: "Thinking…" });
+  el.innerHTML = ms.length ? ms.map(m => `<div class="msg ${m.role}">${esc(m.label || m.content)}${m.actions && m.actions.length ? `<div class="acts-log">${m.actions.map(a => `<span class="pill good">${esc(a)}</span>`).join("")}</div>` : ""}</div>`).join("")
+    : `<div class="empty-note">Pick a check-in above, or just start talking. The coach sees your tasks, goals, balance and what you keep moving, and it will ask why before it says yes.</div>`;
+  el.scrollTop = el.scrollHeight;
+  const b = $("#chatsend"); if (b) b.disabled = busy;
+}
+function snapshotText() {
+  const T = todayISO(), ws = weekStart(), line = t => `[${t.id}] ${t.title} | ${AREA[t.area].name}, ${est(t)}m${t.day ? ", " + t.day : ""}${t.focus ? ", BIG3" : ""}${t.hard ? ", hard conversation" : ""}${t.deferCount ? `, moved ${t.deferCount}x` : ""}${t.due ? ", due " + t.due : ""}${t.goal && S.goals[t.goal] ? ", goal: " + S.goals[t.goal].title : ""}${t.why ? ", why: " + t.why : ""}`;
+  const o = open(), wk = weekMinutes(), L = dayLoad(T);
+  const days = Object.entries(S.days).sort().slice(-7).map(([d, v]) => `${d}: went well=${v.win || "-"}; grateful=${v.grat || "-"}`);
+  return [`TODAY: ${T} (${new Date().toLocaleDateString(undefined, { weekday: "long" })}). Capacity ${fmtM(S.settings.capacity)}, planned today ${fmtM(L.done + L.plan)} (${fmtM(L.done)} done).`,
+    `WEEK INTENTION: ${(S.plans["w-" + ws] || {}).text || "(none)"}  MONTH FOCUS: ${(S.plans["m-" + T.slice(0, 7)] || {}).text || "(none)"}`,
+    `TODAY'S TASKS:\n${o.filter(t => t.day === T).map(line).join("\n") || "(none)"}`,
+    `INBOX / UNSCHEDULED (top 25 by score):\n${o.filter(t => !t.day).sort((a, b) => score(b) - score(a)).slice(0, 25).map(line).join("\n") || "(empty)"}`,
+    `LATER THIS WEEK AND BEYOND:\n${o.filter(t => t.day && t.day > T).slice(0, 15).map(line).join("\n") || "(none)"}`,
+    `WEEK BALANCE (done+planned vs weekly target): ${AREAS.map(a => `${a.name} ${fmtM(wk[a.id].done + wk[a.id].plan)}${S.settings.targets[a.id] ? "/" + fmtM(S.settings.targets[a.id]) : ""}`).join("; ")}`,
+    `GOALS:\n${Object.entries(S.goals).map(([id, g]) => { const s = goalStats(id); return `(${id}) ${g.title} [${g.horizon}, ${AREA[g.area].name}] ${s.done}/${s.total} steps, next step: ${s.next ? s.next.title : "NONE"}${g.why ? ", why: " + g.why : ""}`; }).join("\n") || "(none)"}`,
+    `RECENT REFLECTIONS:\n${days.join("\n") || "(none)"}`].join("\n\n");
+}
+function systemText() {
+  return `You are the planning coach inside Wes White's personal task manager. Wes manages a remote sales team and is a psychotherapist (mostly couples), and is building a content business around psychology. ${S.settings.profile || ""}
+Wes's values: ${S.settings.values.join(", ")}. He wants to be braver in conflict, a more decisive leader, more present, and to protect joy, friends and body from being swallowed by work.
+How to coach: be direct, warm and brief (under 150 words unless asked). Ask ONE sharp question at a time. Challenge motives: why this, why now, what does skipping it cost, is this a real priority or a comfortable one. Name avoidance when you see it (tasks moved repeatedly, hard conversations, a week with no joy or people time) without lecturing. Treat him as an expert; no moral lectures. Offer concrete options and recommend one. Do not cite research unless you can name the primary source, and say when something is clinical consensus rather than evidence. Use tools to act only after Wes agrees: add_task, schedule_task (day plus optional Big 3), set_plan (week or month focus). Never invent task ids.`;
+}
+async function ask(q, label) {
+  if (busy) return;
+  tab = "coach"; render();
+  S.coach.push({ role: "user", content: q, label: label || undefined });
+  paintLog(); await runCoach();
+}
+async function runCoach() {
+  busy = true; draft = ""; paintLog();
+  const actions = [];
+  try {
+    SAMPLE = SAMPLE || (window.claude && window.claude.use ? await window.claude.use("sample") : null);
+    if (!SAMPLE) throw { code: "none" };
+    const hist = S.coach.slice(-16).map(m => ({ role: m.role, content: m.content }));
+    while (hist.length && hist[0].role !== "user") hist.shift();
+    hist[0] = { role: "user", content: `${systemText()}\n\nCURRENT STATE\n${snapshotText()}\n\n---\nConversation so far begins here.\n\n${hist[0].content}` };
+    ctl = new AbortController();
+    const tools = [
+      { name: "add_task", description: "Add a task to Wes's inbox or a day.", inputSchema: { type: "object", properties: { title: { type: "string" }, area: { type: "string", enum: AREAS.map(a => a.id) }, est_minutes: { type: "number" }, day: { type: "string", description: "YYYY-MM-DD or empty for inbox" }, why: { type: "string" } }, required: ["title", "area"] }, execute: i => { addTask({ title: String(i.title).slice(0, 200), area: AREA[i.area] ? i.area : "work", est: i.est_minutes || 30, day: /^\d{4}-\d\d-\d\d$/.test(i.day || "") ? i.day : "", why: i.why || "" }); actions.push("Added: " + i.title); return "added"; } },
+      { name: "schedule_task", description: "Move an existing open task to a day, optionally as a Big 3 for that day.", inputSchema: { type: "object", properties: { task_id: { type: "string" }, day: { type: "string" }, big3: { type: "boolean" } }, required: ["task_id", "day"] }, execute: i => { const t = S.tasks[i.task_id]; if (!t) return "unknown task id"; if (!/^\d{4}-\d\d-\d\d$/.test(i.day)) return "bad date"; store.patch("tasks", i.task_id, { day: i.day, focus: !!i.big3 }); actions.push(`Scheduled: ${t.title} → ${dayName(i.day)}${i.big3 ? " (Big 3)" : ""}`); return "scheduled"; } },
+      { name: "set_plan", description: "Save Wes's focus for the week or month.", inputSchema: { type: "object", properties: { period: { type: "string", enum: ["week", "month"] }, text: { type: "string" } }, required: ["period", "text"] }, execute: i => { const key = i.period === "month" ? "m-" + todayISO().slice(0, 7) : "w-" + weekStart(); store.set("plans", key, { text: String(i.text).slice(0, 300), at: Date.now() }); actions.push(`Saved ${i.period} focus`); return "saved"; } }
+    ];
+    const res = await SAMPLE(hist, { cache: false, signal: ctl.signal, tools, onText: ({ text }) => { draft = text; paintLog(); } });
+    S.coach.push({ role: "assistant", content: res.text || draft || "(no reply)", actions });
+  } catch (e) {
+    S.coach.push({ role: "assistant", content: e && e.code === "not_granted" ? "Coach access was declined for this page. You can allow it from the page's permissions menu." : e && e.code === "none" ? "The coach isn't available in this view. Open the artifact in claude.ai to chat." : e && e.code === "rate_limited" ? "Rate limited. Give it a minute." : "Something went wrong reaching the coach. Try again.", actions });
+  }
+  busy = false; draft = ""; S.coach = S.coach.slice(-40);
+  if (DB) DB.doc("coach/log").set(clean({ messages: S.coach })).catch(() => {}); else lsSave();
+  paintLog();
+}
+async function breakdown(id) {
+  const g = S.goals[id]; if (!g) return;
+  proposals[id] = { loading: true }; render();
+  try {
+    SAMPLE = SAMPLE || await window.claude.use("sample");
+    const r = await SAMPLE.json(`${systemText()}\n\nBreak this goal into steps Wes can actually schedule. Goal: "${g.title}" (${g.horizon}, area ${g.area}). Why it matters: ${g.why || "unknown"}. Target date: ${g.target || "none"}.\nCurrent week balance and tasks for context:\n${snapshotText()}\n\nReturn ONLY JSON: {"cadence": "short suggestion like '30 min, 3x/week'", "steps": [{"title": "verb-first, doable in one sitting", "area": one of ${AREAS.map(a => a.id).join("|")}, "est_minutes": number up to 90}]}. 5 to 8 steps, ordered, the first one doable in under 25 minutes.`, { cache: false });
+    proposals[id] = { cadence: r.cadence, steps: (r.steps || []).slice(0, 10).map(s => ({ title: String(s.title), area: AREA[s.area] ? s.area : g.area, est: s.est_minutes || 30 })) };
+  } catch (e) { proposals[id] = { error: e && e.code === "not_granted" ? "Coach access was declined for this page." : "Could not reach the coach. Try again." }; }
+  render();
+}
+
+/* ---------- overlays ---------- */
+function toast(m) { const t = $("#toast"); t.textContent = m; t.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => t.hidden = true, 2600); }
+function closeLayer() { clearInterval(focusTimer); $("#layer").innerHTML = ""; }
+function sheet(html, cls) { $("#layer").innerHTML = `<div class="overlay" data-act="bg"><div class="sheet ${cls || ""}" role="dialog" aria-modal="true">${html}</div></div>`; const f = $("#layer input[type=text], #layer textarea"); if (f) f.focus(); }
+const opts = (list, sel) => list.map(([v, l]) => `<option value="${esc(v)}" ${v === sel ? "selected" : ""}>${esc(l)}</option>`).join("");
+function editTask(id, preset) {
+  const t = id ? S.tasks[id] : { title: "", area: "work", est: 30, day: "", why: "", hard: false, value: "", goal: "", status: "open", ...preset };
+  sheet(`<h2>${id ? "Edit task" : "New task"}</h2>
+  <div class="field"><label for="f-title">Task</label><input type="text" id="f-title" value="${esc(t.title)}"></div>
+  <div class="two"><div class="field"><label for="f-area">Area</label><select id="f-area">${opts(AREAS.map(a => [a.id, a.name]), t.area)}</select></div>
+  <div class="field"><label for="f-est">Time</label><select id="f-est">${opts([10, 15, 30, 45, 60, 90, 120, 180].map(m => [m, fmtM(m)]), String(est(t)))}</select></div></div>
+  <div class="two"><div class="field"><label for="f-day">Day</label><input type="date" id="f-day" value="${esc(t.day || "")}"></div><div class="field"><label for="f-due">Due (optional)</label><input type="date" id="f-due" value="${esc(t.due || "")}"></div></div>
+  <div class="row-actions"><button class="btn small" data-act="setfday" data-d="${todayISO()}">Today</button><button class="btn small" data-act="setfday" data-d="${addDays(todayISO(), 1)}">Tomorrow</button><button class="btn small" data-act="setfday" data-d="">No day</button></div>
+  <div class="two"><div class="field"><label for="f-goal">Goal</label><select id="f-goal">${opts([["", "None"], ...Object.entries(S.goals).map(([k, g]) => [k, g.title])], t.goal || "")}</select></div>
+  <div class="field"><label for="f-value">Value it serves</label><select id="f-value">${opts([["", "None"], ...S.settings.values.map(v => [v, v])], t.value || "")}</select></div></div>
+  <div class="field"><label for="f-why">Why does this matter? (the coach will ask)</label><textarea id="f-why">${esc(t.why || "")}</textarea></div>
+  <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="f-hard" ${t.hard ? "checked" : ""}> A hard conversation or something I'm tempted to avoid</label>
+  <div class="row-actions" style="justify-content:space-between"><span class="row-actions"><button class="btn primary" data-act="saveTask" data-id="${id || ""}">Save</button><button class="btn" data-act="close">Cancel</button></span><span class="row-actions">${id ? `<button class="btn" data-act="askTask" data-id="${id}">Ask coach</button><button class="btn" data-act="someday" data-id="${id}">Someday</button><button class="btn danger" data-act="delTask" data-id="${id}">Delete</button>` : ""}</span></div>`);
+}
+function editGoal(id) {
+  const g = id ? S.goals[id] : { title: "", area: "work", horizon: "quarter", why: "", target: "" };
+  sheet(`<h2>${id ? "Edit goal" : "New goal"}</h2>
+  <div class="field"><label for="g-title">Goal</label><input type="text" id="g-title" value="${esc(g.title)}" placeholder="Launch my first digital product"></div>
+  <div class="two"><div class="field"><label for="g-area">Area</label><select id="g-area">${opts(AREAS.map(a => [a.id, a.name]), g.area)}</select></div>
+  <div class="field"><label for="g-hz">Horizon</label><select id="g-hz">${opts([["quarter", "This quarter"], ["year", "This year"], ["life", "Long-term"]], g.horizon)}</select></div></div>
+  <div class="field"><label for="g-target">Target date (optional)</label><input type="date" id="g-target" value="${esc(g.target || "")}"></div>
+  <div class="field"><label for="g-why">Why does this matter to you?</label><textarea id="g-why">${esc(g.why || "")}</textarea></div>
+  <div class="row-actions"><button class="btn primary" data-act="saveGoal" data-id="${id || ""}">Save</button><button class="btn" data-act="close">Cancel</button>${id ? `<button class="btn danger" data-act="delGoal" data-id="${id}">Delete</button>` : ""}</div>`);
+}
+function settingsSheet() {
+  const s = S.settings;
+  sheet(`<h2>Settings</h2>
+  <div class="field"><label for="s-cap">Realistic task hours per day</label><input type="number" id="s-cap" min="1" max="14" step="0.5" value="${s.capacity / 60}"></div>
+  <div class="eyebrow">Weekly hours to protect</div>
+  <div class="two">${NOURISH.map(a => `<div class="field"><label for="s-${a}">${esc(AREA[a].name)}</label><input type="number" id="s-${a}" min="0" max="40" step="0.5" value="${(s.targets[a] || 0) / 60}"></div>`).join("")}</div>
+  <div class="field"><label for="s-values">Values (comma separated)</label><input type="text" id="s-values" value="${esc(s.values.join(", "))}"></div>
+  <div class="field"><label for="s-profile">Anything else the coach should know about you</label><textarea id="s-profile" rows="5">${esc(s.profile || "")}</textarea></div>
+  <div class="row-actions"><button class="btn primary" data-act="saveSettings">Save</button><button class="btn" data-act="close">Cancel</button>${all().some(t => t.example) || Object.values(S.goals).some(g => g.example) ? '<button class="btn danger" data-act="clearEx">Clear example data</button>' : ""}</div>`, "wide");
+}
+function startFocus(id) {
+  const t = S.tasks[id]; if (!t) return;
+  let end = Date.now() + 25 * 60000;
+  const paint = () => { const r = Math.max(0, end - Date.now()); const el = $("#tm"); if (el) el.textContent = `${pad(Math.floor(r / 60000))}:${pad(Math.floor(r / 1000) % 60)}`; if (!r) { clearInterval(focusTimer); const n = $("#tmnote"); if (n) n.textContent = "Time. Done, or another round?"; } };
+  sheet(`<div class="eyebrow" style="text-align:center">One thing. Nothing else.</div><div class="focus" style="display:grid"><div class="big">${esc(t.title)}</div>${t.why ? `<p class="muted"><em>${esc(t.why)}</em></p>` : ""}<div class="timer" id="tm">25:00</div><p class="muted" id="tmnote">Phone away. Just begin.</p>
+  <div class="row-actions" style="justify-content:center"><button class="btn primary" data-act="done" data-id="${id}" data-close="1">${ico("check")}Done</button><button class="btn" data-act="more">+10 min</button><button class="btn" data-act="askTask" data-id="${id}">I'm stuck</button><button class="btn ghost" data-act="close">Not now</button></div></div>`);
+  focusTimer = setInterval(paint, 500); focusTimer && (window.__extend = () => { end += 10 * 60000; });
+}
+
+/* ---------- events ---------- */
+document.addEventListener("click", e => {
+  const el = e.target.closest("[data-act]"); if (!el) return;
+  const a = el.dataset.act, id = el.dataset.id;
+  if (a === "bg") { if (e.target === el) closeLayer(); return; }
+  if (a === "tab") { tab = el.dataset.k; $("#view").innerHTML = ""; render(); }
+  else if (a === "filter") { filter = el.dataset.f; render(); }
+  else if (a === "done") { complete(id); if (el.dataset.close) closeLayer(); }
+  else if (a === "big") toggleBig(id);
+  else if (a === "defer") { setDay(id, addDays(todayISO(), 1)); toast("Moved to tomorrow. It still counts as a move."); }
+  else if (a === "day") setDay(id, el.dataset.d);
+  else if (a === "edit") editTask(id);
+  else if (a === "new") editTask(null);
+  else if (a === "focus") startFocus(id);
+  else if (a === "more") { if (window.__extend) window.__extend(); }
+  else if (a === "close") closeLayer();
+  else if (a === "someday") { store.patch("tasks", id, { status: "someday", day: "", focus: false }); closeLayer(); toast("Parked as someday."); }
+  else if (a === "delTask") { store.del("tasks", id); closeLayer(); }
+  else if (a === "setfday") { $("#f-day").value = el.dataset.d; }
+  else if (a === "saveTask") {
+    const title = $("#f-title").value.trim(); if (!title) return toast("Give it a title.");
+    const p = { title, area: $("#f-area").value, est: Number($("#f-est").value), day: $("#f-day").value, due: $("#f-due").value, goal: $("#f-goal").value, value: $("#f-value").value, why: $("#f-why").value.trim(), hard: $("#f-hard").checked };
+    if (id) store.patch("tasks", id, p); else addTask(p);
+    closeLayer();
+  }
+  else if (a === "newGoal") editGoal(null);
+  else if (a === "editGoal") editGoal(id);
+  else if (a === "delGoal") { Object.entries(S.tasks).forEach(([k, t]) => { if (t.goal === id) store.patch("tasks", k, { goal: "" }); }); store.del("goals", id); closeLayer(); }
+  else if (a === "saveGoal") {
+    const title = $("#g-title").value.trim(); if (!title) return toast("Name the goal.");
+    const g = { ...(id ? S.goals[id] : {}), title, area: $("#g-area").value, horizon: $("#g-hz").value, target: $("#g-target").value, why: $("#g-why").value.trim() };
+    store.set("goals", id || rid(), g); closeLayer();
+  }
+  else if (a === "breakdown") breakdown(id);
+  else if (a === "dismissProp") { delete proposals[id]; render(); }
+  else if (a === "addProp") {
+    const g = S.goals[id], P = proposals[id]; let n = 0;
+    document.querySelectorAll(`[data-prop="${id}"]`).forEach(c => { if (c.checked) { const s = P.steps[Number(c.dataset.i)]; addTask({ title: s.title, area: s.area, est: s.est, goal: id }); n++; } });
+    delete proposals[id]; toast(`${n} steps added to the inbox.`); render();
+  }
+  else if (a === "askGoal") { const g = S.goals[id]; ask(`Challenge my goal "${g.title}". Is it the right goal, why does it matter to me, what am I not saying, and what would the first 30 days look like?`, `Challenge: ${g.title}`); }
+  else if (a === "askTask") { const t = S.tasks[id]; closeLayer(); ask(`Help me think through this task: [${id}] ${t.title}. Challenge me: why does it matter, what is the smallest next step, and should it be on my plate at all?`, `About: ${t.title}`); }
+  else if (a === "ask") ask(el.dataset.q, el.dataset.label);
+  else if (a === "settings") settingsSheet();
+  else if (a === "saveSettings") {
+    const num = k => Math.max(0, Number($("#s-" + k).value) || 0) * 60;
+    store.set("settings", "main", { ...S.settings, capacity: num("cap") || 300, targets: { joy: num("joy"), people: num("people"), self: num("self") }, values: $("#s-values").value.split(",").map(v => v.trim()).filter(Boolean), profile: $("#s-profile").value.trim() });
+    closeLayer(); toast("Saved.");
+  }
+  else if (a === "clearEx") {
+    Object.entries(S.tasks).forEach(([k, t]) => { if (t.example) store.del("tasks", k); });
+    Object.entries(S.goals).forEach(([k, g]) => { if (g.example) store.del("goals", k); });
+    closeLayer(); toast("Examples cleared.");
+  }
+});
+document.addEventListener("change", e => {
+  const el = e.target, k = el.dataset.save; if (!k) return;
+  if (k === "week") store.set("plans", "w-" + weekStart(), { text: el.value.trim(), at: Date.now() });
+  if (k === "day") store.set("days", todayISO(), { ...(S.days[todayISO()] || {}), [el.dataset.f]: el.value.trim() });
+});
+$("#capform").addEventListener("submit", e => {
+  e.preventDefault();
+  const v = $("#cap").value.trim(); if (!v) return;
+  addTask({ title: v, area: $("#capArea").value }); $("#cap").value = ""; toast("Captured to inbox.");
+});
+document.addEventListener("submit", e => {
+  if (e.target.id !== "chatform") return;
+  e.preventDefault(); const i = $("#chatin"), v = i.value.trim(); if (!v || busy) return;
+  i.value = ""; ask(v);
+});
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape" && $("#layer").firstChild) closeLayer();
+  if (e.key === "Enter" && !e.shiftKey && e.target.id === "chatin") { e.preventDefault(); $("#chatform").requestSubmit(); }
+});
+
+boot();
+</script>
